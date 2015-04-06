@@ -26,7 +26,7 @@
 
 * **(Done)** Kick-Off ZL 4.10                   2015-03-11-1700 CET
 * **(Done)** Angabe git repositories                   2015-03-15-2359 CET
- * **(Done)** Via Mail inklusive ZHAW Kürzel
+* **(Done)** Via Mail inklusive ZHAW Kürzel
 * **(Done)** EBS-Eintrag                               2015-03-20-2359 CET
 * 1. Zwischenstandsbericht                  2015-04-01-2359 KST
 * 2. Zwischenstandsbericht                  2015-05-01-2359 CEST
