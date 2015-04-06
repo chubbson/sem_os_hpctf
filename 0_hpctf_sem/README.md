@@ -11,7 +11,7 @@
 
 ###permission trouble
 
-* chmod 0666 <filename>
+* chmod 0775 <filename>
 * chown -R fedora \*
 
 ### TASKS
