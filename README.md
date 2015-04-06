@@ -17,7 +17,7 @@
 ### Links
 * https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet
 * https://ebs.zhaw.ch/projects/view/1741
-* https://github.com/chubbson/zhaw_os_linux/tree/master/0_hpctf_sem
+* https://github.com/chubbson/sem_os_hpctf.git
 * https://github.com/telmich/zhaw_concurrent_c_programming_fs_2015
 
 ## hpctf - Hauronen Patronens Capture The Flag
