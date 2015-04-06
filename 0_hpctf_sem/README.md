@@ -12,6 +12,7 @@
 ###permission trouble
 
 * chmod 0666 <filename>
+* chown -R fedora \*
 
 ### TASKS
 * ps aux
