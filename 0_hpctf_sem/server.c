@@ -27,12 +27,12 @@ typedef struct {
 int isfinished(fldstruct *fs)
 {
 	int n = fs->n;
-	int res = fs->field[0][0].value; 
+	int res = fs->field[0][0].flag; 
 	for (int y = 0; y < n; y++)
 	{
 		for (int x = 0; x < n; x++)
 		{
-			if(res != fs->field[y][x].value)
+			if(res != fs->field[y][x].flag)
 				return 0;
 		}
 	}
@@ -47,7 +47,7 @@ int take(fldstruct *fs, int y, int x, int player)
 
 	// lock field at x y
 	pthread_mutex_lock(&fs->field[y][x].mutex);
-	fs->field[y][x].value = player;
+	fs->field[y][x].flag = player;
 	// send taken to player
 	// unlock 
 	pthread_mutex_unlock(&fs->field[y][x].mutex);
@@ -103,27 +103,17 @@ void * strategy2(void * args)
 void * strategy3(void * args)
 { 
 	struct thread_info *tinfo = args;
-	int resval = 0; 
+	int resval = -1; 
 	int n = tinfo->fs->n;
 
-  for(int i = 0; i < 3; i++)
-  {
-  	for(int y = 0; y < n; y++)
-	  {
-	  	for(int x = 0; x < n; x++)
+  for(int i = 0; i < 30 && resval != 0; i++)
+  	for(int y = 0; y < n && resval != 0; y++)
+	  	for(int x = 0; x < n && resval != 0; x++)
 	 		{
 	  		resval = take(tinfo->fs, x, y, tinfo->player);
-	  		if (resval == 0)
-	  			break;
 	  		printfield(tinfo->fs);
-	  		usleep(500000);
+	  		usleep(200000);
 	  	}
-	  	if (resval == 0)
-	  		break;
-	  }
-  	if (resval == 0)
-  		break;
-	}
 
 	return NULL;
 }
@@ -131,25 +121,17 @@ void * strategy3(void * args)
 void * strategy4(void * args)
 { 
 	struct thread_info *tinfo = args;
-	int resval = 0; 
+	int resval = -1; 
 	int n = tinfo->fs->n;
 
-  for(int i = 0; i < 3; i++)
-  {
-  	for(int y = 0; y < n; y++)
-	  {
-	  	for(int x = 0; x < n; x++)
+  for(int i = 0; i < 30 && resval != 0; i++)
+  	for(int y = 0; y < n && resval != 0; y++)
+	  	for(int x = 0; x < n && resval != 0; x++)
 	 		{
 	  		resval = take(tinfo->fs, y, x, tinfo->player);
-	  		if (resval == 0)
-	  			break;
 	  		printfield(tinfo->fs);
-	  		usleep(300000);
+	  		usleep(1750);
 	  	}
-	  	if (resval == 0)
-	  		break;
-	  }
-	}
 
 	return NULL;
 }
@@ -223,17 +205,13 @@ int main(int argc, char const *argv[])
     usage(argv[0]);
 
   printf("n: %d\n", n);
-
   printf("res of sizeof(fldstruct) %d\n",sizeof(fldstruct)); 
   //fldstruct fs; 
 
   hpctf_game * p_hpctf = inithpctf(n);
   printfield(p_hpctf->fs);
-
   someclients(p_hpctf->fs);
-
   freehpctf(p_hpctf);
-
 
   printf("%s\n", "222222s");
 

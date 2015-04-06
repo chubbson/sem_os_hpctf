@@ -14,7 +14,7 @@
 
 typedef struct {
 	pthread_mutex_t mutex; 
-	int value;
+	int flag;
 } square;
 
 typedef struct {
