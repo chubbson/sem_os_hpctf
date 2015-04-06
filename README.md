@@ -4,6 +4,7 @@
 
 ###Makefile
 
+* cd 0_hpctf_sem
 * ../scripts/create-make > makefile
 * make 
 * make all
