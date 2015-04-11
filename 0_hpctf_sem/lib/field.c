@@ -21,7 +21,7 @@ fldstruct * initfield(int n)
 		for (int x = 0; x < n; x++)
 			if ((p_fs->field[y][x].flag = 0) == 0
 				  && pthread_mutex_init(&p_fs->field[y][x].mutex,NULL) != 0) 
-		    printf("\n mutex #'%d'|'%d' in mutarr - init failed\n", y, x);
+		    printf("\n mutex #'%d'|'%d' init failed\n", y, x);
 
 	return p_fs;
 }

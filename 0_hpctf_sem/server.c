@@ -210,7 +210,19 @@ int main(int argc, char const *argv[])
 
   hpctf_game * p_hpctf = inithpctf(n);
   printfield(p_hpctf->fs);
-  someclients(p_hpctf->fs);
+//  someclients(p_hpctf->fs);
+
+  //MAXPLAYER || 6
+  //if(MAXPLAYER - logon(p_hpctf) >= 2)
+  logon(p_hpctf); // 5
+  logon(p_hpctf); // 4
+  logon(p_hpctf); // 3
+  logon(p_hpctf); // 2
+  logon(p_hpctf); // 1
+  logon(p_hpctf); // 0
+//  logon(p_hpctf); // 0
+
+  capturetheflag(p_hpctf, 4,2,3);
   freehpctf(p_hpctf);
 
   printf("%s\n", "222222s");

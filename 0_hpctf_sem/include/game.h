@@ -14,8 +14,10 @@
 #include <semaphore.h>
 //#include <pthread.h>
 
+#define MAXPLAYER 6
+
 typedef struct {
-	enum { WAITING4PLAYERS, STARTED, FINISHED } gamestate;
+	enum { WAITING4PLAYERS, RUNNING, FINISHED } gamestate;
 	fldstruct * fs;
   sem_t freeplayerslots;
   int testvar;
@@ -25,5 +27,6 @@ hpctf_game * inithpctf(int mapsize);
 void freehpctf(hpctf_game *hpctf); 
 void logon(hpctf_game*);
 void logoff(hpctf_game*);
+int capturetheflag(hpctf_game *hpctf, int y, int x, int player);
 
 #endif
