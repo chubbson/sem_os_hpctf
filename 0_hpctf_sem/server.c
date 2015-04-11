@@ -9,6 +9,8 @@
 #include <itskylib.h>
 #include <field.h>
 #include <game.h>
+#include <zmq.h>
+#include <assert.h>
 
 void usage(const char *argv)
 {
@@ -198,6 +200,39 @@ void someclients(fldstruct *fs)
   free(tinfo);
 }
 
+void startzmqserver(hpctf_game * hpctf)
+{
+  // Socket to talk to clients
+  void * context = zmq_ctx_new();
+  void * responder = zmq_socket(context, ZMQ_REP);
+  int rc = zmq_bind(responder, "tcp://*:5555");
+  assert(rc == 0);
+
+  while(1){
+    char buffer[256];
+    int readbytes = zmq_recv(responder, buffer, 256, 0);
+    if (readbytes <= -1)
+    {
+      printf("%s\n", "readbytes <= -1, check errno");
+      handle_error(readbytes, "zmq_recv <= -1", PROCESS_EXIT);
+      //continue;
+    }
+
+    buffer[readbytes] = '\0';
+    printf("Received bytes: %d msg %s", readbytes, buffer);
+    
+    if(strncmp(buffer, "HELLO", 5)) {
+      zmq_send(responder, "SIZE n\n", 256, 0);//5, 0);
+    } else if(strncmp(buffer, "TAKE", 4) == 0 && hpctf->gamestate == RUNNING) {
+
+    } else if (strncmp(buffer, "STATUS", 6) == 0) {
+
+    }
+
+    sleep(1);
+  }
+}
+
 int main(int argc, char const *argv[])
 {
 	int n;
@@ -206,10 +241,15 @@ int main(int argc, char const *argv[])
 
   printf("n: %d\n", n);
   printf("res of sizeof(fldstruct) %d\n",sizeof(fldstruct)); 
+
+
+  handlecommand("a b c d\targ5");
   //fldstruct fs; 
 
   hpctf_game * p_hpctf = inithpctf(n);
   printfield(p_hpctf->fs);
+
+  startzmqserver(p_hpctf);
 //  someclients(p_hpctf->fs);
 
   //MAXPLAYER || 6
