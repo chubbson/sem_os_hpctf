@@ -4,6 +4,7 @@
 
 ###Install zmq 
 * read INSTALLZMQ.md ;)
+* if its useful mark it, http://stackoverflow.com/questions/29573714/another-zmq-installation-guide-using-fedora-running-zguide-c-examples/29573715#29573715
 
 ###Makefile
 
