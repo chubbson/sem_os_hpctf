@@ -6,7 +6,7 @@ By wikipedia: http://en.wikipedia.org/wiki/%C3%98MQ
 
 >ØMQ is developed by a large community of contributors, founded by iMatix, which holds the domain name and trademarks. There are third-party bindings for many popular programming languages.
 
-## This installation guide based on several links, for deeper information check these out
+## This installation guide based on several links, for deeper information check them out
 
 * http://zeromq.org/intro:get-the-software
 * http://czmq.zeromq.org/page:get-the-software
@@ -16,7 +16,7 @@ By wikipedia: http://en.wikipedia.org/wiki/%C3%98MQ
 
 ### Prepare your system 
 
-Im working with fedora, so im using yum install to installing packages. 
+Im working with fedora 17, so im using yum install to installing packages. 
 
 ```c
 yum install asciidoc
@@ -46,12 +46,12 @@ cd libzmq
 ./configure
 ```
 
-if you re runnig in following error
+if you are runnig in following error
 ```c
 configure: error: Package requirements (libsodium) were not met:
 ```
 
-run following based on this article: https://github.com/zeromq/libzmq/issues/1274
+run following, based on this article: https://github.com/zeromq/libzmq/issues/1274
 ```c
 ./configure --without-libsodium
 make 
@@ -119,5 +119,4 @@ open a new terminal and run client
 
 Welcome in the world of zmq
 
-kind regards 
-D. Hauri
+kind regards, D. Hauri
