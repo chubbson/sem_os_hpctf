@@ -1,9 +1,10 @@
 ## ØMQ installation guide by David Hauri
 
 By wikipedia: http://en.wikipedia.org/wiki/%C3%98MQ
-ØMQ (also spelled ZeroMQ, 0MQ or ZMQ) is a high-performance asynchronous messaging library aimed at use in scalable distributed or concurrent applications. It provides a message queue, but unlike message-oriented middleware, a ØMQ system can run without a dedicated message broker. The library is designed to have a familiar socket-style API.
 
-ØMQ is developed by a large community of contributors, founded by iMatix, which holds the domain name and trademarks. There are third-party bindings for many popular programming languages.
+> ØMQ (also spelled ZeroMQ, 0MQ or ZMQ) is a high-performance asynchronous messaging library aimed at use in scalable distributed or concurrent applications. It provides a message queue, but unlike message-oriented middleware, a ØMQ system can run without a dedicated message broker. The library is designed to have a familiar socket-style API.
+
+>ØMQ is developed by a large community of contributors, founded by iMatix, which holds the domain name and trademarks. There are third-party bindings for many popular programming languages.
 
 ## This installation guide based on several links, for deeper information check these out
 
@@ -97,8 +98,8 @@ sudo vi /etc/ld.so.conf
 sudo ldconfig
 ```
 
-#### test zmq
-testing zmq sample hello world by starting hwserver
+#### Testing ØMQ 
+Testing zmq sample hello world by starting hwserver
 
 ```c
 cd ..
@@ -114,8 +115,9 @@ open a new terminal and run client
 ./hwclient
 ```
 
-so 10 Hello messages should be send from client and 10 world should be sent from server which client receives
+10 Hello messages should be send from client and 10 world should be sent from server which client receives
 
 Welcome in the world of zmq
+
 kind regards 
 D. Hauri
