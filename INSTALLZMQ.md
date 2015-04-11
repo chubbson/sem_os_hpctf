@@ -33,7 +33,7 @@ Clone some zmq repositories, probable as siblings of my rootrepsitory sem_os_hpc
 ```c
 cd ..
 git clone git@github.com:zeromq/libzmq.git
-git clone git://github.com/zeromq/czmq
+git clone git@github.com:zeromq/czmq.git
 git clone git@github.com:imatix/zguide.git
 ```
 
