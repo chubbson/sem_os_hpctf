@@ -1,11 +1,29 @@
-## ZMQ installation guide by David Hauri
+## ØMQ installation guide by David Hauri
 
 By wikipedia: http://en.wikipedia.org/wiki/%C3%98MQ
 ØMQ (also spelled ZeroMQ, 0MQ or ZMQ) is a high-performance asynchronous messaging library aimed at use in scalable distributed or concurrent applications. It provides a message queue, but unlike message-oriented middleware, a ØMQ system can run without a dedicated message broker. The library is designed to have a familiar socket-style API.
 
 ØMQ is developed by a large community of contributors, founded by iMatix, which holds the domain name and trademarks. There are third-party bindings for many popular programming languages.
 
-## Notes
+## This installation guide based on several links, for deeper information check these out
+
+* http://zeromq.org/intro:get-the-software
+* http://czmq.zeromq.org/page:get-the-software
+* https://github.com/zeromq/czmq
+* https://github.com/zeromq/libzmq
+
+## Prepare your system 
+
+Im working with fedora, so im using yum install to installing packages. 
+
+```c
+yum install asciidoc
+yum install xmlto
+```
+
+
+
+
 
 ###Install zmq 
 * read INSTALLZMQ.md ;)
