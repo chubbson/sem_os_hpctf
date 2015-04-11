@@ -2,6 +2,9 @@
 
 ## Notes
 
+###Install zmq 
+* read INSTALLZMQ.md ;)
+
 ###Makefile
 
 * cd 0_hpctf_sem
