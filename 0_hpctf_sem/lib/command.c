@@ -10,7 +10,45 @@
 
 #define WHITE " \t\n" // white spafe for tokenizing arguments
 #define MAXARGC 50 // max number of arguments in buf 
- 
+
+void handlecommandargsarr(int argc, char *argv[])
+{
+    if(strcmp(argv[0], "HELLO") == 0)
+    {
+
+    }
+    else if(strcmp(argv[0], "SIZE") == 0)
+    {
+        
+    }
+    else if(strcmp(argv[0], "NACK") == 0)
+    {
+        
+    }
+    else if(strcmp(argv[0], "START") == 0)
+    {
+        
+    }
+    else if(strcmp(argv[0], "TAKE") == 0)
+    {
+        
+    }
+    else if(strcmp(argv[0], "INUSE") == 0)
+    {
+        
+    }
+    else if(strcmp(argv[0], "STATUS") == 0)
+    {
+        
+    }
+    else if(strcmp(argv[0], "END") == 0)
+    {
+        
+    }
+    // do some handle code, in this example, just print the arguments
+    for(int i = 0; i < argc; i++)
+        printf("argv[%d]='%s'\n", i, argv[i]);
+}//p658 
 
 void handlecommand(char * cmdstr)
 {
@@ -21,7 +59,7 @@ void handlecommand(char * cmdstr)
     char *saveptr;
     char *ptr;
     char *argv[MAXARGC]; 
-    int argc;
+    int argc; 
 
     if((ptr = strtok_r(cmdstrdup, WHITE, &saveptr)) == NULL)
     {
@@ -40,15 +78,9 @@ void handlecommand(char * cmdstr)
     }
 
     // handle command before free
-    handle(argc, argv);
+    handlecommandargsarr(argc, argv);
 
     // free cmdstrdup, cuz strdup does malloc inside
     free(cmdstrdup);
 }
 
-void handle(int argc, char const *argv[])
-{
-    // do some handle code, in this example, just print the arguments
-    for(int i = 0; i < argc; i++)
-        printf("argv[%d]='%s'\n", i, argv[i]);
-}//p658

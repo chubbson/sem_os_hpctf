@@ -5,19 +5,22 @@
  * License: GPL v2 (See https://de.wikipedia.org/wiki/GNU_General_Public_License )
 **/
 
+#include <unistd.h>
 #include <apue.h>
 #include <itskylib.h>
 #include <field.h>
 #include <game.h>
+#include <command.h>
 #include <zmq.h>
 #include <assert.h>
+
 
 void usage(const char *argv)
 {
 	printf("USAGE:\n\n%s fieldsizeGreater3\n", argv);
   exit(1);
 } 
- 
+  
 /*
 typedef struct {
 	int n; // side length
@@ -228,7 +231,7 @@ void startzmqserver(hpctf_game * hpctf)
     } else if (strncmp(buffer, "STATUS", 6) == 0) {
 
     }
-
+ 
     sleep(1);
   }
 }
@@ -241,9 +244,9 @@ int main(int argc, char const *argv[])
 
   printf("n: %d\n", n);
   printf("res of sizeof(fldstruct) %d\n",sizeof(fldstruct)); 
+ 
 
-
-  handlecommand("a b c d\targ5");
+  handlecommand("a b c d\targ5\narg6");
   //fldstruct fs; 
 
   hpctf_game * p_hpctf = inithpctf(n);
