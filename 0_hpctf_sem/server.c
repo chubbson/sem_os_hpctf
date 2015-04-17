@@ -17,6 +17,28 @@
 #include <gamehelper.h>
 
 
+static int s_interrupted = 0; 
+
+// Signal handling 
+// call s_catch_signals() in your application at startup, 
+// and then exit your mainloop if s_interrupted is ever 1. 
+static void s_signal_handler(int signal_value)
+{
+  s_interrupted = 1; 
+}
+
+static void s_catch_signals(void)
+{
+  struct sigaction action; 
+  action.sa_handler = s_signal_handler;
+  action.sa_flags = 0; 
+  sigemptyset(&action.sa_mask);
+  sigaction(SIGINT, &action, NULL);
+  sigaction(SIGTERM, &action, NULL); 
+}
+
+ 
+
 void usage(const char *argv)
 {
 	printf("USAGE:\n\n%s fieldsizeGreater3\n", argv);
@@ -113,7 +135,7 @@ void handlecommand(hpctf_game * hpctfptr, cmd * cmdptr, void * responder)
 
   printfield(hpctfptr->fs);
   printplayer(hpctfptr); 
-
+ 
 }
 
 void startzmqserver(hpctf_game * hpctf)
@@ -123,8 +145,17 @@ void startzmqserver(hpctf_game * hpctf)
   void * responder = zmq_socket(context, ZMQ_REP);
   int rc = zmq_bind(responder, "tcp://*:5555");
   assert(rc == 0);
+ 
 
+  s_catch_signals();
   while(1){
+    if (s_interrupted == 1)
+    {
+
+      printf("INTERRUPT RECEIVED, killing server");
+      break;
+      /* code */
+    }
     char buffer[256];
     int readbytes = zmq_recv(responder, buffer, 256, 0);
 //    if (readbytes <= -1)
@@ -143,10 +174,13 @@ void startzmqserver(hpctf_game * hpctf)
     free(cmdptr);
 
  
-    usleep(1*1000*100);
+   // usleep(1*1000*100);
   }
+  zmq_close(responder);
+  zmq_ctx_destroy(context);
 }
 
+ 
 int main(int argc, char const *argv[])
 {
 	int n;
@@ -166,11 +200,11 @@ int main(int argc, char const *argv[])
   hpctf_game * p_hpctf = inithpctf(n);
   printfield(p_hpctf->fs);
 
-  logon(p_hpctf); // 5
-  logon(p_hpctf); // 4
-  logon(p_hpctf); // 3
-  logon(p_hpctf); // 2
-  logon(p_hpctf); // 1
+  //logon(p_hpctf); // 5
+  //logon(p_hpctf); // 4
+  //logon(p_hpctf); // 3
+  //logon(p_hpctf); // 2
+  //logon(p_hpctf); // 1
 
   startzmqserver(p_hpctf);
   /*

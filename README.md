@@ -23,6 +23,7 @@
 * https://ebs.zhaw.ch/projects/view/1741
 * https://github.com/chubbson/sem_os_hpctf.git
 * https://github.com/telmich/zhaw_concurrent_c_programming_fs_2015
+* http://stackoverflow.com/questions/2529834/strtok-wont-accept-char-str/29583758#29583758
 
 ## hpctf - Hauronen Patronens Capture The Flag
 

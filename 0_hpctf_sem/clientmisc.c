@@ -3,7 +3,7 @@
 #include <apue.h>
 #include <itskylib.h>
 #include <field.h>
-
+/*
 struct thread_info {     // Used as argument to thread_start() 
   pthread_t thread_id;   // ID returned by pthread_create() 
   int       thread_num;  // Application-defined thread # 
@@ -78,6 +78,9 @@ void * strategy4(void * args)
   return NULL;
 }
 
+*/
+/*
+
 void someclients(fldstruct *fs)
 {
   struct thread_info *tinfo;
@@ -125,18 +128,19 @@ void someclients(fldstruct *fs)
   }
 
 
-  // join with each thread, and display its returned value */
+  // join with each thread, and display its returned value 
   for (int i = 0; i < nmax; i++) {
     ptcres = pthread_join(tinfo[i].thread_id, &res);
     if (ptcres != 0)
         handle_error(ptcres, "pthread_join", PROCESS_EXIT);
 
     printf("Joined with thread %d; \n",
-            tinfo[i].thread_num /*, (char *) res */);
-    //free(res);      /* Free memory allocated by thread */
+            tinfo[i].thread_num); // , (char *) res );
+    //free(res);      // Free memory allocated by thread 
   }
 
 
   free(tinfo);
 }
 
+*/

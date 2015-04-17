@@ -5,13 +5,16 @@ CFLAGS=-Wall -g -O2 -std=gnu99 -I. -I./include -L./lib
 LIBS=-lcitsky -lm -lpthread -lzmq -lczmq
 
 
-all: client server
+all: client clientmisc server
 
 clean:
-	rm -f  client server lib/error.o lib/lib.o lib/command.o lib/field.o lib/gamehelper.o lib/game.o lib/errorlog.o
+	rm -f  client clientmisc server lib/error.o lib/lib.o lib/command.o lib/field.o lib/gamehelper.o lib/game.o lib/errorlog.o
 
 client: client.c lib/libcitsky.a
 	gcc $(CFLAGS) client.c $(LIBS) -o client
+
+clientmisc: clientmisc.c lib/libcitsky.a
+	gcc $(CFLAGS) clientmisc.c $(LIBS) -o clientmisc
 
 server: server.c lib/libcitsky.a
 	gcc $(CFLAGS) server.c $(LIBS) -o server

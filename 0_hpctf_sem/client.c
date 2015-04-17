@@ -105,6 +105,8 @@ int startzmqclient()
             }
             if(cmdptr->command == NACK || cmdptr->command == END)
               docontinue = FALSE;
+
+            usleep(1*1000*100*((pid%MAXPLAYER)+1));
           }
       }
     }
