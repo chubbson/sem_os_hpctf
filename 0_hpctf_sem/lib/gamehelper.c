@@ -25,3 +25,46 @@ void printgamestate(hpctf_game* hpctf)
 			break;
 	}
 }
+
+game_settings getgamesettings(hpctf_game *hpctf)
+//playerslots getplayercount(hpctf_game *hpctf) 
+{
+  int val;
+  int res = sem_getvalue(&hpctf->freeplayerslots, &val);
+  int cnt = MAXPLAYER - val;
+  game_settings gs;
+
+  gs.fullslots = cnt;
+  gs.emptyslots = val; 
+  gs.fieldsize = hpctf->fs->n;
+
+  printf("sem val res cnt: %d | %d | %d\n", val, res, cnt);
+  return gs;
+}
+
+game_settings gamesettings(int fieldsize)
+{
+  game_settings gs;
+  gs.fullslots = 1;
+  gs.emptyslots = MAXPLAYER - 1; 
+  gs.fieldsize = fieldsize;
+  return gs;
+}
+
+void printgamesettings(game_settings *gs)
+{
+  printf("MAXPLAYER: %d emptyslots: %d fullslots: %d fieldsize %d\n", MAXPLAYER, gs->emptyslots, gs->fullslots, gs->fieldsize);
+}
+
+void printplayer(hpctf_game *hpctf)
+{
+  for (int i = 0; i < MAXPLAYER; ++i)
+  {
+    if(hpctf->plidx[i] == NULL)
+      return;
+    char fld[MAXLINE]; 
+    fld[0] = '\0';
+    sprintcolfield(i+1, fld);
+    printf("%s = %s\n", fld, hpctf->plidx[i]);
+  }
+}

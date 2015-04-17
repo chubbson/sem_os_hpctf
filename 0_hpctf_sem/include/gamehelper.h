@@ -10,6 +10,17 @@
 
 #include <game.h>
 
+typedef struct {
+  int fullslots; // side length
+  int emptyslots; 
+  int fieldsize;
+} game_settings; //playerslots;
+
 void printgamestate(hpctf_game* hpctf);
+//playerslots getplayercount(hpctf_game *hpctf);
+game_settings getgamesettings(hpctf_game *hpctf);
+game_settings gamesettings(int fieldsize);
+void printgamesettings(game_settings *gs);
+void printplayer(hpctf_game *hpctf);
 
 #endif

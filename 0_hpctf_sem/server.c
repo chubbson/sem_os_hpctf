@@ -4,7 +4,7 @@
  * Date: 2015-03-29
  * License: GPL v2 (See https://de.wikipedia.org/wiki/GNU_General_Public_License )
 **/
-
+ 
 #include <unistd.h>
 #include <apue.h>
 #include <itskylib.h>
@@ -14,193 +14,106 @@
 #include <zmq.h>
 #include <assert.h>
 
+#include <gamehelper.h>
+
 
 void usage(const char *argv)
 {
 	printf("USAGE:\n\n%s fieldsizeGreater3\n", argv);
   exit(1);
 } 
-  
-/*
-typedef struct {
-	int n; // side length
-  int** field; // field
-  pthread_mutex_t mutfield[4][4];
-} fldstruct;
 
-*/
-int isfinished(fldstruct *fs)
+void handlecommand(hpctf_game * hpctfptr, cmd * cmdptr, void * responder)
 {
-	int n = fs->n;
-	int res = fs->field[0][0].flag; 
-	for (int y = 0; y < n; y++)
-	{
-		for (int x = 0; x < n; x++)
-		{
-			if(res != fs->field[y][x].flag)
-				return 0;
-		}
-	}
-	return res;
-}
+  char buf[256];
+  int n;
+  game_settings gs = getgamesettings(hpctfptr);
 
-int take(fldstruct *fs, int y, int x, int player)
-{
-
-	// todo: mod to phread_mutex_trylock
-	// INUSE\n
-
-	// lock field at x y
-	pthread_mutex_lock(&fs->field[y][x].mutex);
-	fs->field[y][x].flag = player;
-	// send taken to player
-	// unlock 
-	pthread_mutex_unlock(&fs->field[y][x].mutex);
-
-	int res = isfinished(fs); 
-	if(res > 0)
-	{
-		printf("END %d \n", res);
-		return 0;
-	} 
-
-	return 1;
-}
-
-struct thread_info {     // Used as argument to thread_start() 
-  pthread_t thread_id;   // ID returned by pthread_create() 
-  int       thread_num;  // Application-defined thread # 
-  int     	player;
-  fldstruct *fs;         // Pointer to fldstruct var *  
-}; //counterstruct shared;
-
-void * strategy1(void * args)
-{ 
-	struct thread_info *tinfo = args;
-	sleep(5);
-	take(tinfo->fs, 4, 4, tinfo->player);
-
-	return NULL;
-}
-
-void * strategy2(void * args)
-{ 
-	struct thread_info *tinfo = args;
-
-  take(tinfo->fs, 1,1, 1);
-  take(tinfo->fs, 1,2, 2);
-  printfield(tinfo->fs);
-  sleep(1);
-  take(tinfo->fs, 1,3, 3);
-  printfield(tinfo->fs);
-  sleep(1);
-  take(tinfo->fs, 2,2, 4);
-  printfield(tinfo->fs);
-  sleep(1);
-  take(tinfo->fs, 3,2, 5);
-  printfield(tinfo->fs);
-  sleep(1);
-  take(tinfo->fs, 3,3, 6);
-
-	return NULL;
-}
-
-void * strategy3(void * args)
-{ 
-	struct thread_info *tinfo = args;
-	int resval = -1; 
-	int n = tinfo->fs->n;
-
-  for(int i = 0; i < 30 && resval != 0; i++)
-  	for(int y = 0; y < n && resval != 0; y++)
-	  	for(int x = 0; x < n && resval != 0; x++)
-	 		{
-	  		resval = take(tinfo->fs, x, y, tinfo->player);
-	  		printfield(tinfo->fs);
-	  		usleep(200000);
-	  	}
-
-	return NULL;
-}
-
-void * strategy4(void * args)
-{ 
-	struct thread_info *tinfo = args;
-	int resval = -1; 
-	int n = tinfo->fs->n;
-
-  for(int i = 0; i < 30 && resval != 0; i++)
-  	for(int y = 0; y < n && resval != 0; y++)
-	  	for(int x = 0; x < n && resval != 0; x++)
-	 		{
-	  		resval = take(tinfo->fs, y, x, tinfo->player);
-	  		printfield(tinfo->fs);
-	  		usleep(1750);
-	  	}
-
-	return NULL;
-}
-
-void someclients(fldstruct *fs)
-{
-	struct thread_info *tinfo;
-  void  *res;  
-  int nmax , ptcres;
-  nmax = 4;
-
-  // allocate memorey for pthread_creat() arguments
-  tinfo = calloc(nmax, sizeof(struct thread_info));
-  if (tinfo == NULL)
-    err_sys("calloc");
-
-  // Create thread per arg
-  for(int i = 0; i < nmax; i++)
+  int commandsucceed = verifycommand(cmdptr, &gs);
+  if(commandsucceed == TRUE)
   {
-    tinfo[i].thread_num = i; 
-    tinfo[i].player = i+1;
-    tinfo[i].fs = fs;
-
-    // the pthread_create() call stores the thread id into corresponding element 
-    // of tinfo[]
-    switch(i % 4)
+    printf("%s\n", "handlecommand, verification sucess");
+    if(hpctfptr->gamestate == FINISHED 
+    && cmdptr->command != HELLO)
     {
-    	case 0:
-    		ptcres = pthread_create(&tinfo[i].thread_id, NULL, &strategy1, &tinfo[i]);
-    		break;
-    	case 1:
-    		ptcres = pthread_create(&tinfo[i].thread_id, NULL, &strategy2, &tinfo[i]);
-    	  break;
-    	case 2:
-    		ptcres = pthread_create(&tinfo[i].thread_id, NULL, &strategy3, &tinfo[i]);
-    	  break;
-    	case 3:
-    	default:
-    		ptcres = pthread_create(&tinfo[i].thread_id, NULL, &strategy4, &tinfo[i]);
-    	
-    	  break;
+      if((n = sprintf(buf, 
+                      "END %s\n", 
+//                      hpctfptr->winner, 
+                      hpctfptr->winnername)) > 0)
+      {
+        zmq_send(responder, buf, 256, 0);
+        logoff(hpctfptr);
+        //zmq_send(responder, "START\n",256,0); 
+      }
     }
 
-    if (ptcres != 0)
-      handle_error(ptcres, "pthread_create", PROCESS_EXIT);
-
-    printf("thread created: %d; \n",
-        tinfo[i].thread_num);
+    int res; 
+    switch(cmdptr->command)
+    {
+      //case UNKNOWN:
+      //  break;
+      case HELLO:
+        switch (logon(hpctfptr))
+        {
+          case 0:
+            if((n = sprintf(buf, "SIZE %d\n", hpctfptr->fs->n)) > 0)
+              zmq_send(responder, buf, 256, 0);
+            break;
+          case 1:
+            // send async start
+            if((n = sprintf(buf, "SIZE %d\n", hpctfptr->fs->n)) > 0)
+            {
+              zmq_send(responder, buf, 256, 0);
+              //zmq_send(responder, "START\n",256,0); 
+            }
+            break;
+          case -1:
+          default:
+            zmq_send(responder, "NACK\n",256,0);
+            break;
+        }
+        break;
+      case TAKE:
+        printf("%s\n", "command take");
+        if((res = capturetheflag(hpctfptr, 
+                                 cmdptr->x, 
+                                 cmdptr->y, 
+                                 cmdptr->playername)) >= 0)
+        {
+          if(res == TRUE)
+            zmq_send(responder, "TAKEN\n",256,0);
+          // finished 
+          if(res == FALSE)
+            zmq_send(responder, "INUSE\n",256,0);
+        }
+        else
+        {
+          // Disconnect, unknown player, slots full
+          zmq_send(responder, "NACK\n",256,0);
+        }
+        break;
+      case STATUS:
+        if((n = sprintf(buf, "%d\n", (hpctfptr->fs->field[cmdptr->y][cmdptr->x]).flag)) > 0)
+        {
+          zmq_send(responder, buf, 256, 0);
+        }
+        break;
+      case UNKNOWN:
+      default:
+        // drop command 
+        break;
+    }    
+  }
+  else
+  {
+    // drop command, validation failed
+    printf("%s\n", "handlecommand, verification failed");
   }
 
 
-  // join with each thread, and display its returned value */
-  for (int i = 0; i < nmax; i++) {
-    ptcres = pthread_join(tinfo[i].thread_id, &res);
-    if (ptcres != 0)
-        handle_error(ptcres, "pthread_join", PROCESS_EXIT);
+  printfield(hpctfptr->fs);
+  printplayer(hpctfptr); 
 
-    printf("Joined with thread %d; \n",
-            tinfo[i].thread_num /*, (char *) res */);
-    //free(res);      /* Free memory allocated by thread */
-  }
-
-
-  free(tinfo);
 }
 
 void startzmqserver(hpctf_game * hpctf)
@@ -214,25 +127,23 @@ void startzmqserver(hpctf_game * hpctf)
   while(1){
     char buffer[256];
     int readbytes = zmq_recv(responder, buffer, 256, 0);
-    if (readbytes <= -1)
-    {
-      printf("%s\n", "readbytes <= -1, check errno");
-      handle_error(readbytes, "zmq_recv <= -1", PROCESS_EXIT);
-      //continue;
-    }
+//    if (readbytes <= -1)
+//    {
+//      printf("%s\n", "readbytes <= -1, check errno");
+//      handle_error(readbytes, "zmq_recv <= -1", PROCESS_EXIT);
+//      //continue;
+//    }
 
     buffer[readbytes] = '\0';
-    printf("Received bytes: %d msg %s", readbytes, buffer);
-    
-    if(strncmp(buffer, "HELLO", 5)) {
-      zmq_send(responder, "SIZE n\n", 256, 0);//5, 0);
-    } else if(strncmp(buffer, "TAKE", 4) == 0 && hpctf->gamestate == RUNNING) {
 
-    } else if (strncmp(buffer, "STATUS", 6) == 0) {
+    printf("Received bytes: %d msg %s \n", readbytes, buffer);
+    cmd * cmdptr = parseandinitcommand(buffer);
+    handlecommand(hpctf, cmdptr, responder);
+    printf("%s\n", "after hanlde command");
+    free(cmdptr);
 
-    }
  
-    sleep(1);
+    usleep(1*1000*100);
   }
 }
 
@@ -245,27 +156,42 @@ int main(int argc, char const *argv[])
   printf("n: %d\n", n);
   printf("res of sizeof(fldstruct) %d\n",sizeof(fldstruct)); 
  
+  int a = -1;
+  a = atoi("f");
+  printf("a: %d\n", a);
 
-  handlecommand("a b c d\targ5\narg6");
+//  cmd * cmdptr = parseandinitcommit("a b c d\targ5\narg6");
   //fldstruct fs; 
 
   hpctf_game * p_hpctf = inithpctf(n);
   printfield(p_hpctf->fs);
 
-  startzmqserver(p_hpctf);
-//  someclients(p_hpctf->fs);
-
-  //MAXPLAYER || 6
-  //if(MAXPLAYER - logon(p_hpctf) >= 2)
   logon(p_hpctf); // 5
   logon(p_hpctf); // 4
   logon(p_hpctf); // 3
   logon(p_hpctf); // 2
   logon(p_hpctf); // 1
+
+  startzmqserver(p_hpctf);
+  /*
+//  someclients(p_hpctf->fs);
+  game_settings gs;
+  //MAXPLAYER || 6
+  //if(MAXPLAYER - logon(p_hpctf) >= 2)
+  logon(p_hpctf); // 5
+  logon(p_hpctf); // 4
+  logon(p_hpctf); // 3
+  gs = getgamesettings(p_hpctf); 
+  printgamesettings(&gs);
+  logon(p_hpctf); // 2
+  gs = getgamesettings(p_hpctf); 
+  printgamesettings(&gs);
+  logon(p_hpctf); // 1
   logon(p_hpctf); // 0
 //  logon(p_hpctf); // 0
 
   capturetheflag(p_hpctf, 4,2,3);
+  */
   freehpctf(p_hpctf);
 
   printf("%s\n", "222222s");

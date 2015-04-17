@@ -20,13 +20,21 @@ typedef struct {
 	enum { WAITING4PLAYERS, RUNNING, FINISHED } gamestate;
 	fldstruct * fs;
   sem_t freeplayerslots;
-  int testvar;
+  int winner;
+  char winnername[251];
+  char * plidx[MAXPLAYER];
+//  int testvar;
 } hpctf_game;
+
+typedef struct {
+  int idx;
+  char * player; 
+} player_idx;
 
 hpctf_game * inithpctf(int mapsize);
 void freehpctf(hpctf_game *hpctf); 
-void logon(hpctf_game*);
-void logoff(hpctf_game*);
-int capturetheflag(hpctf_game *hpctf, int y, int x, int player);
+int logon(hpctf_game *hpctf);
+int logoff(hpctf_game *hpctf);
+int capturetheflag(hpctf_game *hpctf, int y, int x, char * playername);//int player);
 
 #endif

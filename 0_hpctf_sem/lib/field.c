@@ -43,6 +43,18 @@ void freefield(fldstruct *fs)
 	free(fs);
 }
 
+int isfinished(fldstruct *fs)
+{
+	int n = fs->n;
+	int res = fs->field[0][0].flag; 
+	for (int y = 0; y < n; y++)
+		for (int x = 0; x < n; x++)
+			if(res != fs->field[y][x].flag)
+				return 0;
+
+	return res;
+}
+
 void sprintcolfield(int i, char *str)/*, int n, char * str*/
 {	
 	if(str == NULL)
@@ -58,8 +70,8 @@ void sprintcolfield(int i, char *str)/*, int n, char * str*/
 	}
 	else
 	{
-		switch(i%7)
-		{
+		switch(i%7) 
+		{ 
 			case 1: 
 				n = sprintf(buf, KFRED "%d" RESET, i);
 				break;

@@ -10,8 +10,17 @@
 
 #include <apue.h>
 #include <itskylib.h>
-#include <pthread.h>
+#include <gamehelper.h>
 
-void handlecommand(char * cmdstr);
+typedef struct {
+  enum { UNKNOWN, HELLO, SIZE, NACK, START, TAKE, TAKEN, INUSE, STATUS, PLAYER, END } command;
+  int n, x, y;
+  //char * player;
+  //int player;
+  char * playername;
+} cmd;
+
+cmd * parseandinitcommand(char * cmdstr);
+int verifycommand(cmd * cmdptr, game_settings * settings);
 
 #endif
