@@ -14,7 +14,7 @@
 #include <semaphore.h>
 //#include <pthread.h>
 
-#define MAXPLAYER 6
+#define MAXPLAYER 1878 // -> somecolor, added new fieldprint. 1878 different stante could be printed so that the new max player cnt
 
 typedef struct {
 	enum { WAITING4PLAYERS, RUNNING, FINISHED } gamestate;

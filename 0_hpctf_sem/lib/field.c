@@ -60,6 +60,11 @@ void sprintcolfield(int i, char *str)/*, int n, char * str*/
 	if(str == NULL)
 		return;
 
+	scatcolor(i, str);
+
+	/*
+	return;
+
 	int n = 0; 
  	char buf[MAXLINE];
  	buf [0] = '\0';
@@ -103,6 +108,7 @@ void sprintcolfield(int i, char *str)/*, int n, char * str*/
 		buf[n] = '\0';
 		strcat(str, buf);
 	}
+	*/
 } 
 
 void printfield(fldstruct *fs)

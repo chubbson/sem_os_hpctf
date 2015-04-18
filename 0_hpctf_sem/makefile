@@ -8,7 +8,7 @@ LIBS=-lcitsky -lm -lpthread -lzmq -lczmq
 all: client clientmisc server
 
 clean:
-	rm -f  client clientmisc server lib/error.o lib/lib.o lib/command.o lib/field.o lib/gamehelper.o lib/game.o lib/errorlog.o
+	rm -f  client clientmisc server lib/error.o lib/lib.o lib/command.o lib/field.o lib/gamehelper.o lib/somecolor.o lib/game.o lib/errorlog.o
 
 client: client.c lib/libcitsky.a
 	gcc $(CFLAGS) client.c $(LIBS) -o client
@@ -34,6 +34,9 @@ lib/field.o: lib/field.c
 lib/gamehelper.o: lib/gamehelper.c
 	gcc -c $(CFLAGS) lib/gamehelper.c -o lib/gamehelper.o
 
+lib/somecolor.o: lib/somecolor.c
+	gcc -c $(CFLAGS) lib/somecolor.c -o lib/somecolor.o
+
 lib/game.o: lib/game.c
 	gcc -c $(CFLAGS) lib/game.c -o lib/game.o
 
@@ -42,5 +45,5 @@ lib/errorlog.o: lib/errorlog.c
 
 
 
-lib/libcitsky.a: lib/error.o lib/lib.o lib/command.o lib/field.o lib/gamehelper.o lib/game.o lib/errorlog.o
-	ar crs lib/libcitsky.a lib/error.o lib/lib.o lib/command.o lib/field.o lib/gamehelper.o lib/game.o lib/errorlog.o
+lib/libcitsky.a: lib/error.o lib/lib.o lib/command.o lib/field.o lib/gamehelper.o lib/somecolor.o lib/game.o lib/errorlog.o
+	ar crs lib/libcitsky.a lib/error.o lib/lib.o lib/command.o lib/field.o lib/gamehelper.o lib/somecolor.o lib/game.o lib/errorlog.o

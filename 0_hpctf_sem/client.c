@@ -13,6 +13,7 @@
 #include <assert.h>
 #include <command.h>
 #include <gamehelper.h>
+#include <unistd.h>
 
 void usage(const char *argv)
 {

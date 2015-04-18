@@ -15,10 +15,10 @@
 #include <assert.h>
 
 #include <gamehelper.h>
-
+#include <somecolor.h>
 
 static int s_interrupted = 0; 
-
+ 
 // Signal handling 
 // call s_catch_signals() in your application at startup, 
 // and then exit your mainloop if s_interrupted is ever 1. 
@@ -180,9 +180,15 @@ void startzmqserver(hpctf_game * hpctf)
   zmq_ctx_destroy(context);
 }
 
+
  
 int main(int argc, char const *argv[])
 {
+  for (int i = -1; i < 1878; ++i)//1787; ++i)
+  {
+    printcolor(i);/* code */
+  }
+
 	int n;
 	if (argc < 2 || argc != 2 || (n = atoi(argv[1])) < 4)
     usage(argv[0]);

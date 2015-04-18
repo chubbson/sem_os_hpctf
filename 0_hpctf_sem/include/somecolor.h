@@ -36,8 +36,7 @@
 
 #define BLKBLDBLURED "\e[1;5;34;41m"
 
- /*
-const char pink[] = "\e[1;35m";   
-const char purple[] = "\e[0;35m"; 
-*/
+int scatcolor(int idx, char *str);
+void printcolor(int idx);
+
 #endif
