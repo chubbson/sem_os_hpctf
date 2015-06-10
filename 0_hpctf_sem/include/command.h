@@ -22,5 +22,7 @@ typedef struct {
 
 cmd * parseandinitcommand(char * cmdstr);
 int verifycommand(cmd * cmdptr, game_settings * settings);
+char * cmd_stype(cmd * cmdptr);
+void cmd_dump(cmd * cmdptr);
 
 #endif

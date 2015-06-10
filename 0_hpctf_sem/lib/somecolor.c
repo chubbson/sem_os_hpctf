@@ -52,7 +52,7 @@ int scatcolor(int idx, char *str)
     strcat(str, buf);
   }
 
-  //printf("%d %d %d %d\n",letidx, idx, digfg, digbg);
+  //printf("%d = %s: %d %d %d\n", idx, buf, letidx, digfg, digbg);
 
   return n;
 }

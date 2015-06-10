@@ -38,7 +38,7 @@ game_settings getgamesettings(hpctf_game *hpctf)
   gs.emptyslots = val; 
   gs.fieldsize = hpctf->fs->n;
 
-  printf("sem val res cnt: %d | %d | %d\n", val, res, cnt);
+//debug  printf("sem val res cnt: %d | %d | %d\n", val, res, cnt);
   return gs;
 }
 

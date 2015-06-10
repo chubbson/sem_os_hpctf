@@ -9,7 +9,7 @@
 #include <itskylib.h>
 //#include <field.h>
 //#include <game.h>
-#include <zmq.h>
+#include <czmq.h>
 #include <assert.h>
 #include <command.h>
 #include <gamehelper.h>
@@ -78,6 +78,8 @@ int startzmqclient()
   zmq_connect(requester, "tcp://localhost:5555");
 
   int sentbytes = zmq_send(requester, "HELLO \n", 256, 0);
+
+
   int readbytes;
   if((readbytes = zmq_recv(requester, buffer, 256, 0)) > 0)
   {
@@ -93,7 +95,7 @@ int startzmqclient()
           for (int x = 0; x < gs.fieldsize && docontinue; x++)
           {
             pid_t pid = getpid();
-            sprintf(buffer, "TAKE %d %d %d", y, x, pid);//%(MAXPLAYER) + 1);
+            sprintf(buffer, "TAKE %d %d %d \n", x, y, pid);//%(MAXPLAYER) + 1);
             printf("sending: %s\n", buffer);
             sentbytes = zmq_send(requester, buffer, 256, 0);
             readbytes = zmq_recv(requester, buffer, 256, 0);
@@ -107,54 +109,16 @@ int startzmqclient()
             if(cmdptr->command == NACK || cmdptr->command == END)
               docontinue = FALSE;
 
-            usleep(1*1000*100*((pid%MAXPLAYER)+1));
+            usleep(1*1000*1000);//0*((pid%5)+1));
           }
       }
     }
-
     free(cmdptr);
-
-
   } 
 
   printf("Received bytes: %d msg %s \n", readbytes, buffer);
   printf("%s\n", "exit client");
-/*
 
-  int receivedbytes = zmq_recv(requester, buffer, 10, 0);
-
-  int request_nbr;
-
-  while(1){
-    char buffer[256];
-    int readbytes = zmq_recv(responder, buffer, 256, 0);
-    if (readbytes <= -1)
-    {
-      printf("%s\n", "readbytes <= -1, check errno");
-      handle_error(readbytes, "zmq_recv <= -1", PROCESS_EXIT);
-      //continue;
-    }
-
-    buffer[readbytes] = '\0';
-
-    printf("Received bytes: %d msg %s", readbytes, buffer);
-    cmd * cmdptr = parseandinitcommand(buffer);
-    handlecommand(hpctf_game * hpctfptr, cmd * cmdptr, responder);
- 
-    sleep(1);
-  }
-
-
-
-  for(request_nbr = 0; request_nbr != 10; request_nbr++)
-  {
-    char buffer [256];
-    printf("Sending Hello %d ...\n", request_nbr);
-    int sentbytes = zmq_send(requester, "HELLO \n", 256, 0);
-    int receivedbytes = zmq_recv(requester, buffer, 10, 0);
-    printf("Received World %d recbytes %d %s", request_nbr, receivedbytes, buffer);
-  }
-*/
   zmq_close(requester);
   zmq_ctx_destroy(context);
 
@@ -163,12 +127,8 @@ int startzmqclient()
 
 int main(int argc, char const *argv[])
 {
-	int n;
-	if (argc < 2 || argc != 2 || (n = atoi(argv[1])) < 4)
+	if (argc < 1 )//|| argc != 2 || (n = atoi(argv[1])) < 4)
     usage(argv[0]);
-
-  printf("n: %d\n", n);
-  //fldstruct fs; 
 
   printf("%s\n", "starting zmqclient");
   int res = startzmqclient();

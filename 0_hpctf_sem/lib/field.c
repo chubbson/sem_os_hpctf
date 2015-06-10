@@ -133,7 +133,10 @@ void printfield(fldstruct *fs)
 			sprintcolfield(-1, prntfld);
 
 			for(int x = 0; x < fs->n; ++x)
+			{
+				printf("flag:%d\n", fs->field[y][x].flag);
 				sprintcolfield(fs->field[y][x].flag, prntfld);
+			}
 
 			// right border
 			sprintcolfield(-1, prntfld);
