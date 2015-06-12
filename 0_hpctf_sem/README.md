@@ -13,6 +13,7 @@
 
 * chmod 0775 <filename>
 * chown -R fedora \*
+* chown -R fedora <filename>
 
 ### TASKS
 * ps aux

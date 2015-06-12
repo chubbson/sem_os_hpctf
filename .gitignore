@@ -16,6 +16,7 @@
 !scripts/add-ignored
 !*.h
 !*.c
+!*.sh
 !*.a
 !CUnit*/*
 !makefile
