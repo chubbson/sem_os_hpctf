@@ -22,5 +22,6 @@ void setSize(zhash_t * kvmap, int seq, void * socket, int size);
 void setOwner(zhash_t * kvmap, int seq, void * socket, int x, int y, char * playername);
 void setPlayerid(zhash_t * kvmap, int seq, void * socket, char * playername, int plid);
 int newPlidx(zhash_t * kvmap, int seq);
+void printGameSettings(zhash_t * kvmap);
 
 #endif

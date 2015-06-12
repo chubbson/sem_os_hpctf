@@ -19,7 +19,7 @@
 
 #include <kvsimple.h>
 #include <kvmaphelper.h>
-
+ 
 static int s_interrupted = 0; 
  
 // Signal handling 
@@ -140,8 +140,12 @@ void handlecommand(hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq)
   }
   else
   {
+    printf("%s\n", "handlecommand, verification failed -> sending NACK");
+    // Disconnect, unknown player, slots full
+    zmq_send(hpctfptr->responder, "NACK\n",256,0);
+
     // drop command, validation failed
-//debug    printf("%s\n", "handlecommand, verification failed");
+
   } 
 }
 
@@ -154,7 +158,7 @@ static void updgamesettings_task(void *args, zctx_t *ctx, void *pipe)
   int64_t sequence = 0; 
 
   while(!zctx_interrupted){
-    printf("seq: %d\n", sequence++);
+    printf("seq: %" PRId64 "\n", sequence++);
 
     char buffer[256];
     int rc = zmq_recv(hpctf->responder, buffer, 256, 0);
@@ -192,6 +196,7 @@ static void updgamesettings_task(void *args, zctx_t *ctx, void *pipe)
 
 
 //static void updgamesettings_task(void *args, zctx_t *ctx, void *pipe)
+/*
 static int s_handlerupdgamesettings (zloop_t *loop, int timer_id, void *arg)
 {
   hpctf_game * hpctf = (hpctf_game *)arg;
@@ -200,7 +205,7 @@ static int s_handlerupdgamesettings (zloop_t *loop, int timer_id, void *arg)
   int64_t sequence = 0; 
 
   while(!zctx_interrupted){
-    printf("seq: %d\n", sequence++);
+    printf("seq: %" PRId64 "\n", sequence++);
 
     char buffer[256];
     int rc = zmq_recv(hpctf->responder, buffer, 256, 0);
@@ -234,7 +239,31 @@ static int s_handlerupdgamesettings (zloop_t *loop, int timer_id, void *arg)
 
   return 0;
 }
+*/
 
+static int s_timer_syncplid_event (zloop_t *loop, int timer_id, void *arg)
+{
+  //sync players
+  bool fldbool[MAXPLAYER] = {FALSE};
+  hpctf_game * hpctf = (hpctf_game *)arg;
+  if(hpctf && !zctx_interrupted)
+  {
+    for (int x = 0; x < hpctf->fs->n; x++)
+      for (int y = 0; y < hpctf->fs->n; y++)
+      {
+        int plid = hpctf->fs->field[y][x].flag;
+        
+        if(!fldbool[plid])
+        {
+          setPlayerid(hpctf->kvmap, hpctf->seq++, hpctf->fldpublisher, hpctf->plidx[plid], plid);
+          //printf("%d - %s \n", plid, hpctf->plidx[plid]);
+          fldbool[plid] = TRUE;
+        }   
+      } 
+  }
+
+  return 0; 
+}
 
 static int s_timer_publishstate_event (zloop_t *loop, int timer_id, void *arg)
 {
@@ -251,7 +280,7 @@ static int s_timer_publishstate_event (zloop_t *loop, int timer_id, void *arg)
 
 }
 
-
+/*
 static int
 s_seq_cnt (zloop_t *loop, int timer_id, void *args)
 {
@@ -261,9 +290,10 @@ s_seq_cnt (zloop_t *loop, int timer_id, void *args)
     hpctf->seq++; 
 
     printf("chk1\n");
-    printf("sseqcnt %d\n", hpctf->seq);
+    printf("sseqcnt %" PRId64 "\n", hpctf->seq);
     return 0;
 }
+*/
 
 void startzmqserver(hpctf_game * hpctf)
 {
@@ -286,6 +316,8 @@ void startzmqserver(hpctf_game * hpctf)
 //  zloop_timer (hpctf->loop, 1000, 0, s_seq_cnt, hpctf);
 
   zloop_timer(hpctf->loop, 1000, 0, s_timer_publishstate_event, hpctf);
+  zloop_timer(hpctf->loop, 1000, 0, s_timer_syncplid_event, hpctf);
+
 //  zloop_timer(hpctf->loop, 1000, 1, s_handlerupdgamesettings, hpctf);
   zthread_fork(hpctf->ctx, updgamesettings_task, hpctf);
 
@@ -329,34 +361,13 @@ void * threadwork_printfld(void *args)
   return NULL;
 }
 
-
-
-static int
-s_snapshots (zloop_t *loop, zmq_pollitem_t *poller, void *args)
-{
-    hpctf_game * hpctf = (hpctf_game *) args;
-    hpctf->seq++; 
-    printf("ssnapshot %s\n", hpctf->seq);
-    return 0;
-}
-
-
-static int
-s_collector (zloop_t *loop, zmq_pollitem_t *poller, void *args)
-{
-    hpctf_game * hpctf = (hpctf_game *) args;
-    hpctf->seq++; 
-    printf("ssnapshot%s\n", hpctf->seq);
-    return 0;
-}
-
 int main(int argc, char const *argv[])
 {
-/*  for (int i = -1; i < 1878; ++i)//1787; ++i)
+  for (int i = -1; i < 1878; ++i)//1787; ++i)
   {
     printcolor(i);
   }
-*/
+  
 	int n;
 	if (argc < 2 || argc != 2 || (n = atoi(argv[1])) < 4)
     usage(argv[0]);
@@ -364,9 +375,6 @@ int main(int argc, char const *argv[])
   printf("n: %d\n", n);
 
   hpctf_game * hpctf = inithpctf(n);
-  int port = 5556;
-// printfield(p_hpctf->fs);
-
   startzmqserver(hpctf);
 
 //  printf("%s\n", "before free");

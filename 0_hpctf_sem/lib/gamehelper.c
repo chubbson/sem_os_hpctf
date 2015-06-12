@@ -27,10 +27,9 @@ void printgamestate(hpctf_game* hpctf)
 }
 
 game_settings getgamesettings(hpctf_game *hpctf)
-//playerslots getplayercount(hpctf_game *hpctf) 
 {
   int val;
-  int res = sem_getvalue(&hpctf->freeplayerslots, &val);
+  /*int res = */sem_getvalue(&hpctf->freeplayerslots, &val);
   int cnt = MAXPLAYER - val;
   game_settings gs;
 

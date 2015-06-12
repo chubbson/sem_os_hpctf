@@ -61,54 +61,6 @@ void sprintcolfield(int i, char *str)/*, int n, char * str*/
 		return;
 
 	scatcolor(i, str);
-
-	/*
-	return;
-
-	int n = 0; 
- 	char buf[MAXLINE];
- 	buf [0] = '\0';
-
-	if(i < 0)
-	{
-		n = sprintf(buf, KFWHT "%d" RESET, i*i);
-	}
-	else
-	{
-		switch(i%7) 
-		{ 
-			case 1: 
-				n = sprintf(buf, KFRED "%d" RESET, i);
-				break;
-			case 2: 
-				n = sprintf(buf, KFGRN "%d" RESET, i);
-				break;
-			case 3:  
-				n = sprintf(buf, KFYEL "%d" RESET, i);
-				break;
-			case 4: 
-				n = sprintf(buf, KFBLU "%d" RESET, i);
-				break;
-			case 5: 
-				n = sprintf(buf, KFMAG "%d" RESET, i);
-				break;
-			case 6: 
-				n = sprintf(buf, KFCYN "%d" RESET, i);
-				break;
-			case 0: 
-				n = sprintf(buf, " " RESET);
-				break; 
-			default: 
-				n = sprintf(buf, "%d", i);
-				break;
-		} 	
-	}
-	if (n > 0)
-	{
-		buf[n] = '\0';
-		strcat(str, buf);
-	}
-	*/
 } 
 
 void printfield(fldstruct *fs)
@@ -134,7 +86,6 @@ void printfield(fldstruct *fs)
 
 			for(int x = 0; x < fs->n; ++x)
 			{
-				printf("flag:%d\n", fs->field[y][x].flag);
 				sprintcolfield(fs->field[y][x].flag, prntfld);
 			}
 

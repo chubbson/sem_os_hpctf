@@ -31,7 +31,7 @@ typedef struct {
   void * fldpublisher;        // fld and state publisher
   zhash_t *kvmap;             //  Key-value store
   zloop_t *loop;              //  Reactor loop
-  int seq;
+  int64_t seq;
 //  int testvar;
 } hpctf_game;
 

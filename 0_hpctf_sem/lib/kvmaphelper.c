@@ -8,6 +8,8 @@
 #include <kvmaphelper.h>
 #include <kvsimple.h>
 
+#include <gamehelper.h>
+
 
 char * getKvValue(zhash_t * kvmap, char * key)
 {
@@ -104,3 +106,18 @@ int newPlidx(zhash_t * kvmap, int seq)
   return plidxcnt;
 }
 
+void printGameSettings(zhash_t * kvmap)
+{
+  int state = getState(kvmap);
+  int size = getSize(kvmap);
+
+  char * res = state == WAITING4PLAYERS
+        ? "WAITING4PLAYERS"
+        : state == RUNNING
+        ? "RUNNING"
+        : state == FINISHED
+        ? "FINISHED"
+        : ""; 
+
+  printf("Gamestate: [%d]%s - Size: %d\n", state, res, size);
+}

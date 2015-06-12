@@ -5,6 +5,8 @@
  * License: GPL v2 (See https://de.wikipedia.org/wiki/GNU_General_Public_License )
 **/
 
+#include <unistd.h>
+
 #include <apue.h>
 #include <itskylib.h>
 //#include <field.h>
@@ -13,13 +15,38 @@
 #include <assert.h>
 #include <command.h>
 #include <gamehelper.h>
-#include <unistd.h>
+#include <clistrategies.h>
+#include <client.h>
 
-void usage(const char *argv)
+
+int updms = 5000;
+int pid = 0; 
+int strat = 0; 
+
+void usage(int argc, char const *argv[])
 {
-	printf("USAGE:\n\n%s fieldsizeGreater3\n", argv);
-  exit(1);
-} 
+  printf("USAGE:\n\n%s\n", argv[0]);
+  printf("\t-ms=5000\tUpdate in ms, default rand 1-1000ms\n");
+  printf("\t-s=1\tStrategy 1-6 will calc with mod 6\n");
+
+  updms=(randof(1000)+1)*1;
+  pid = getpid();
+  strat = pid;
+
+  for (int i = 0; i < argc; ++i)
+  {
+    if(strncmp(argv[i], "-s=", 3) == 0)
+    {  
+      sscanf(argv[i], "-s=%d", &strat);
+      break;
+    }
+    if(strncmp(argv[i], "-ms=", 4) == 0)
+    {
+      sscanf(argv[i], "-ms=%d", &updms);
+      break;
+    }
+  }
+}  
 
 void handlecommand(game_settings * gs, cmd * cmdptr)
 {
@@ -66,10 +93,88 @@ void handlecommand(game_settings * gs, cmd * cmdptr)
 
 }
 
+cmd * sendCmd(game_settings * gs, char * scmd)
+{ 
+  char buffer[256];
+  snprintf(buffer, 256, "%s", scmd);
+  printf("sending: %s\n", buffer);
+  /*int sentbytes = */zmq_send(gs->requester, buffer, 256, 0);
+  printf("receive\n");
+  int readbytes = zmq_recv(gs->requester, buffer, 256, 0);
+  printf("Received bytes: %d msg %s \n", readbytes, buffer);
+  if(readbytes > 0)
+  {
+    cmd * cmdptr = parseandinitcommand(buffer); 
+    handlecommand(gs, cmdptr);
+    return cmdptr;
+  } 
+  return NULL;  
+}
+
+int sendHello(game_settings * gs)
+{
+  int retres = FALSE;
+  cmd * cmdptr = sendCmd(gs, "HELLO \n");
+
+  if(cmdptr->command == SIZE)
+    retres = TRUE;
+
+  if (cmdptr)
+    free(cmdptr);
+
+  return retres;
+}
+
+int sendTake(game_settings * gs, int x, int y, int pid)
+{
+  int retres = FALSE; 
+  char buffer[256];
+  sprintf(buffer, "TAKE %d %d %d \n", x, y, pid);//%(MAXPLAYER) + 1);
+
+  cmd * cmdptr = sendCmd(gs, buffer);
+
+  if(cmdptr && (cmdptr->command == TAKEN || cmdptr->command == INUSE))
+    retres = TRUE;
+
+  if(cmdptr)
+    free(cmdptr);
+
+  return retres;
+}
+
+void strategie(game_settings * gs)
+{
+  int res = sendHello(gs);
+  if(res)
+    switch(strat % 6)
+    { 
+      case 0:
+        strategie1(pid, gs );
+        break;
+      case 1: 
+        strategie2(pid, gs );
+        break;
+      case 2: 
+        strategie3(pid, gs );
+        break;
+      case 3: 
+        strategie4(pid, gs );
+        break;
+      case 4: 
+        strategie5(pid, gs );
+        break;
+      case 5: 
+      default:
+        strategie6(pid, gs );
+        break;
+    }
+}
+
+
+
 int startzmqclient()
 {
-  char buffer[256];
-  game_settings gs;
+  game_settings * gs = malloc(sizeof(game_settings));
 
   // Socket to talk to clients
   printf("%s\n", "Connecting to hello world server ....");
@@ -77,58 +182,26 @@ int startzmqclient()
   void * requester = zmq_socket(context, ZMQ_REQ);
   zmq_connect(requester, "tcp://localhost:5555");
 
-  int sentbytes = zmq_send(requester, "HELLO \n", 256, 0);
+  gs->requester = requester;
+  gs->updms = updms;
 
+  strategie(gs);
 
-  int readbytes;
-  if((readbytes = zmq_recv(requester, buffer, 256, 0)) > 0)
-  {
-    printf("Received bytes: %d msg %s \n", readbytes, buffer);
-    cmd * cmdptr = parseandinitcommand(buffer);
-    handlecommand(&gs, cmdptr);
-    int docontinue = TRUE; 
-    if(cmdptr->command == SIZE)
-    {
-      //int cnt = 0;
-      while(docontinue){
-        for (int y = 0; y < gs.fieldsize && docontinue; y++)
-          for (int x = 0; x < gs.fieldsize && docontinue; x++)
-          {
-            pid_t pid = getpid();
-            sprintf(buffer, "TAKE %d %d %d \n", x, y, pid);//%(MAXPLAYER) + 1);
-            printf("sending: %s\n", buffer);
-            sentbytes = zmq_send(requester, buffer, 256, 0);
-            readbytes = zmq_recv(requester, buffer, 256, 0);
-            printf("Received bytes: %d msg %s \n", readbytes, buffer);
-            if(readbytes > 0)
-            {
-              free(cmdptr);
-              cmdptr = parseandinitcommand(buffer); 
-              handlecommand(&gs, cmdptr);
-            }
-            if(cmdptr->command == NACK || cmdptr->command == END)
-              docontinue = FALSE;
-
-            usleep(1*1000*1000);//0*((pid%5)+1));
-          }
-      }
-    }
-    free(cmdptr);
-  } 
-
-  printf("Received bytes: %d msg %s \n", readbytes, buffer);
   printf("%s\n", "exit client");
 
   zmq_close(requester);
   zmq_ctx_destroy(context);
+
+  free(gs);
 
   return 0;
 }
 
 int main(int argc, char const *argv[])
 {
-	if (argc < 1 )//|| argc != 2 || (n = atoi(argv[1])) < 4)
-    usage(argv[0]);
+  srandom ((unsigned) time (NULL));
+	//if (argc < 1 )//|| argc != 2 || (n = atoi(argv[1])) < 4)
+  usage(argc, argv);
 
   printf("%s\n", "starting zmqclient");
   int res = startzmqclient();

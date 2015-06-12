@@ -14,6 +14,8 @@ typedef struct {
   int fullslots; // side length
   int emptyslots; 
   int fieldsize;
+  void * requester;
+  int updms;
 } game_settings; //playerslots;
 
 void printgamestate(hpctf_game* hpctf);

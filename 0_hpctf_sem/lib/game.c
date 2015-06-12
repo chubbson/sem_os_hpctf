@@ -133,7 +133,7 @@ int logon(hpctf_game *hpctf)
     return -1;
 
   int val;
-  int res = sem_getvalue(&hpctf->freeplayerslots, &val);
+  /*int res = */sem_getvalue(&hpctf->freeplayerslots, &val);
 
 //debug  printf("sem val: %d | %d\n", val, res);
   if(hpctf->gamestate != RUNNING && MAXPLAYER - val >= 2)
@@ -150,7 +150,7 @@ int logoff(hpctf_game *hpctf)
   sem_post(&(hpctf->freeplayerslots));
 
   int val;
-  int res = sem_getvalue(&hpctf->freeplayerslots, &val);
+  /*int res = */sem_getvalue(&hpctf->freeplayerslots, &val);
 
 //debug  printf("sem val: %d | %d\n", val, res);
   if(hpctf->gamestate != WAITING4PLAYERS && MAXPLAYER - val < 2)
@@ -234,18 +234,9 @@ int capturetheflag(hpctf_game *hpctf, int x, int y, char * playername)// int pla
   if(hpctf->gamestate != RUNNING)
     return -4; 
 
-/*  char buf[245];
-  int n = sprintf(buf, "Player %d", player);
-  if (n <= 0)
-    return -5; 
-  buf[n] = '\0';
-*/
-
-  printf("%s pn: %s\n", "before plid", playername);
-  int plid = playerid(hpctf, playername); //########
+  int plid = playerid(hpctf, playername); 
   char * ptmp = hpctf->plidx[plid];
-  printf("after plid: %d - %s\n", plid, ptmp);
-
+ 
   if (plid == 0)
     return -1;
 
