@@ -15,29 +15,6 @@
 int verbose = FALSE; 
 int updms = 5000;
 
-static void updsubscriber_task(void *args, zctx_t *ctx, void *pipe)
-{
-    zhash_t *kvmap = (zhash_t *)args;
-    void *updsub = zsocket_new (ctx, ZMQ_SUB);
-    zsocket_set_subscribe (updsub, "");
-    zsocket_connect (updsub, "tcp://localhost:5556");
-
-    int64_t sequence = 0;
-
-    while (!zctx_interrupted) {
-        sequence++;
-        kvmsg_t *kvmsg = kvmsg_recv (updsub);
-        if (verbose)
-          kvmsg_dump(kvmsg);
-        if (!kvmsg)
-            break;          //  Interrupted
-        
-        kvmsg_store (&kvmsg, kvmap);
-    }
-
-    printf (" Interrupted\n%d messages in\n", (int) sequence);
-}
-
 void usage(int argc, char const *argv[])
 {
   printf("%s\n", "fldviewer");
@@ -49,15 +26,49 @@ void usage(int argc, char const *argv[])
     if(strcmp(argv[i], "-v") == 0)
     {  
       verbose = TRUE; 
-      break;
+      continue;
     }
     if(strncmp(argv[i], "-ms=", 4) == 0)
     {
       sscanf(argv[i], "-ms=%d", &updms);
-      break;
+      continue;
     }
   }
 } 
+
+
+
+static void updsubscriber_task(void *args, zctx_t *ctx, void *pipe)
+{
+  zhash_t * kvmap = (zhash_t *)args;
+
+  void * updsub = zsocket_new (ctx, ZMQ_SUB);
+  zsocket_set_subscribe (updsub, "");
+  zsocket_connect (updsub, "tcp://localhost:5556");
+
+  int64_t sequence = 0;
+
+  while (!zctx_interrupted) {
+      sequence++;
+      kvmsg_t *kvmsg = kvmsg_recv (updsub);
+      if (!kvmsg)
+        break;          //  Interrupted
+
+      if (verbose)
+        kvmsg_dump(kvmsg);
+      
+      kvmsg_store (&kvmsg, kvmap);
+  }
+
+  zsocket_destroy (ctx, updsub);
+
+  char buf[100];
+  snprintf(buf, 100, "updsubscriber_task, Interrupted\n%" PRId64 "messages in\n", sequence);
+  puts(buf);
+  //zstr_send(pipe, buf);
+}
+
+
 
 int main(int argc, char const *argv[])
 {
@@ -67,14 +78,14 @@ int main(int argc, char const *argv[])
   zctx_t *ctx = zctx_new ();
   zhash_t *kvmap = zhash_new ();
 
-  zthread_fork(ctx, updsubscriber_task, kvmap);
+  void * updsubpipe = zthread_fork(ctx, updsubscriber_task, kvmap);
 
   int size = getSize(kvmap);
   fldstruct * fs = initfield(size);
 
-
   while(!zctx_interrupted)
   {
+    printf("zctx_interrupted %d zsys_interrupted %d\n", zctx_interrupted, zsys_interrupted );
     size = getSize(kvmap);
     if(fs->n != size)
     {
@@ -116,6 +127,7 @@ int main(int argc, char const *argv[])
     usleep(updms*1000);//0*((pid%5)+1));
   }
   freefield(fs);
+  puts("before exit");
 
   zhash_destroy (&kvmap);
   zctx_destroy (&ctx);

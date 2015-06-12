@@ -13,11 +13,12 @@
 
 char * getKvValue(zhash_t * kvmap, char * key)
 {
-  kvmsg_t *kvmsg = (kvmsg_t *) zhash_lookup (kvmap, key);
-  if(kvmsg)
+  kvmsg_t * kvmsg = (kvmsg_t *) zhash_lookup (kvmap, key);
+  if(kvmsg != NULL)
   {
+    char * res = (char *)kvmsg_body (kvmsg);
     //kvmsg_dump(kvmsg);
-    return (char *)kvmsg_body (kvmsg); 
+    return res != NULL ? res : "";
   }
 
   return "";
