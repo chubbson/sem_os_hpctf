@@ -8,7 +8,7 @@ LIBS=-lcitsky -lm -lpthread -lzmq -lczmq
 all: fldviewer client server
 
 clean:
-	rm -f  fldviewer client server lib/error.o lib/lib.o lib/command.o lib/kvmaphelper.o lib/field.o lib/clistrategies.o lib/kvsimple.o lib/gamehelper.o lib/somecolor.o lib/game.o lib/errorlog.o lib/fieldhelper.o
+	rm -f  fldviewer client server lib/error.o lib/lib.o lib/svlb_helper.o lib/command.o lib/kvmaphelper.o lib/field.o lib/clistrategies.o lib/kvsimple.o lib/gamehelper.o lib/somecolor.o lib/game.o lib/errorlog.o lib/fieldhelper.o
 
 fldviewer: fldviewer.c lib/libcitsky.a
 	gcc $(CFLAGS) fldviewer.c $(LIBS) -o fldviewer
@@ -24,6 +24,9 @@ lib/error.o: lib/error.c
 
 lib/lib.o: lib/lib.c
 	gcc -c $(CFLAGS) lib/lib.c -o lib/lib.o
+
+lib/svlb_helper.o: lib/svlb_helper.c
+	gcc -c $(CFLAGS) lib/svlb_helper.c -o lib/svlb_helper.o
 
 lib/command.o: lib/command.c
 	gcc -c $(CFLAGS) lib/command.c -o lib/command.o
@@ -57,5 +60,5 @@ lib/fieldhelper.o: lib/fieldhelper.c
 
 
 
-lib/libcitsky.a: lib/error.o lib/lib.o lib/command.o lib/kvmaphelper.o lib/field.o lib/clistrategies.o lib/kvsimple.o lib/gamehelper.o lib/somecolor.o lib/game.o lib/errorlog.o lib/fieldhelper.o
-	ar crs lib/libcitsky.a lib/error.o lib/lib.o lib/command.o lib/kvmaphelper.o lib/field.o lib/clistrategies.o lib/kvsimple.o lib/gamehelper.o lib/somecolor.o lib/game.o lib/errorlog.o lib/fieldhelper.o
+lib/libcitsky.a: lib/error.o lib/lib.o lib/svlb_helper.o lib/command.o lib/kvmaphelper.o lib/field.o lib/clistrategies.o lib/kvsimple.o lib/gamehelper.o lib/somecolor.o lib/game.o lib/errorlog.o lib/fieldhelper.o
+	ar crs lib/libcitsky.a lib/error.o lib/lib.o lib/svlb_helper.o lib/command.o lib/kvmaphelper.o lib/field.o lib/clistrategies.o lib/kvsimple.o lib/gamehelper.o lib/somecolor.o lib/game.o lib/errorlog.o lib/fieldhelper.o

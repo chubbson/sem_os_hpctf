@@ -14,8 +14,7 @@
 #include <semaphore.h>
 #include <czmq.h>
 //#include <pthread.h>
-
-#define MAXPLAYER 1878 //1878 // -> somecolor, added new fieldprint. 1878 different stante could be printed so that the new max player cnt
+#include <gameconst.h>
 
 
 typedef struct {
@@ -27,12 +26,15 @@ typedef struct {
   char * plidx[MAXPLAYER];
 
   zctx_t * ctx;               // context rapper
-  void * responder;           // respond request
+  void * frontend;           // respond request
+  void * backend;            // load balancer
   void * fldpublisher;        // fld and state publisher
   zhash_t *kvmap;             //  Key-value store
   zloop_t *loop;              //  Reactor loop
   int64_t seq;
 //  int testvar;
+  zlist_t * workers;
+
 } hpctf_game;
 
 typedef struct {

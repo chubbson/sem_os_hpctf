@@ -7,7 +7,7 @@
 
 #include <apue.h>
 #include <itskylib.h> 
-#include <field.h>
+#include <fieldhelper.h>
 #include <game.h>
 //#include <pthread.h>
 #include <gamehelper.h>
@@ -64,7 +64,7 @@ hpctf_game * inithpctf(int mapsize)
   p_hpctf->kvmap = zhash_new ();
   p_hpctf->loop = zloop_new ();
 
-  p_hpctf->responder = zsocket_new (p_hpctf->ctx, ZMQ_REP);
+  p_hpctf->frontend = zsocket_new (p_hpctf->ctx, ZMQ_REP);
   p_hpctf->fldpublisher = zsocket_new (p_hpctf->ctx, ZMQ_PUB);
 //  zsocket_bind (p_hpctf->fldpublisher, "tcp://*:%d", 5556 + 1);
   //p_hpctf->responder = zsocket_new (p_hpctf->ctx, ZMQ_REP);
@@ -83,7 +83,7 @@ void freehpctf(hpctf_game * p_hpctf)
   rc = zsocket_wait (reader);
   assert (rc == 0);
   */
-  zsocket_destroy (p_hpctf->ctx, p_hpctf->responder);
+  zsocket_destroy (p_hpctf->ctx, p_hpctf->frontend);
   zsocket_destroy (p_hpctf->ctx, p_hpctf->fldpublisher);
   zloop_destroy (&p_hpctf->loop);
   zhash_destroy (&p_hpctf->kvmap);

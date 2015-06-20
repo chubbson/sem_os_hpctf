@@ -20,6 +20,8 @@
 #include <kvsimple.h>
 #include <kvmaphelper.h>
  
+#include <svlb_helper.h>
+
 static int s_interrupted = 0; 
  
 // Signal handling 
@@ -91,9 +93,9 @@ void handlecommand(hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq)
 //                      hpctfptr->winner, 
                       hpctfptr->winnername)) > 0)
       {
-        zmq_send(hpctfptr->responder, buf, 256, 0);
+        zmq_send(hpctfptr->frontend, buf, 256, 0);
         logoff(hpctfptr);
-        //zmq_send(responder, "START\n",256,0); 
+        //zmq_send(frontend, "START\n",256,0); 
       }
     }
 
@@ -106,25 +108,25 @@ void handlecommand(hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq)
       //  break;
       case SIZE: 
         if((n = sprintf(buf, "SIZE %d\n", hpctfptr->fs->n)) > 0)
-              zmq_send(hpctfptr->responder, buf, 256, 0);
+              zmq_send(hpctfptr->frontend, buf, 256, 0);
       case HELLO:
         switch (logon(hpctfptr))
         {
           case 0:
             if((n = sprintf(buf, "SIZE %d\n", hpctfptr->fs->n)) > 0)
-              zmq_send(hpctfptr->responder, buf, 256, 0);
+              zmq_send(hpctfptr->frontend, buf, 256, 0);
             break;
           case 1:
             // send async start
             if((n = sprintf(buf, "SIZE %d\n", hpctfptr->fs->n)) > 0)
             {
-              zmq_send(hpctfptr->responder, buf, 256, 0);
-              //zmq_send(responder, "START\n",256,0); 
+              zmq_send(hpctfptr->frontend, buf, 256, 0);
+              //zmq_send(frontend, "START\n",256,0); 
             }
             break;
           case -1:
           default:
-            zmq_send(hpctfptr->responder, "NACK\n",256,0);
+            zmq_send(hpctfptr->frontend, "NACK\n",256,0);
             break;
         }
         break;
@@ -137,22 +139,22 @@ void handlecommand(hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq)
         {
           if(res == TRUE)
           {
-            zmq_send(hpctfptr->responder, "TAKEN\n",256,0);
+            zmq_send(hpctfptr->frontend, "TAKEN\n",256,0);
           }
           // finished 
           if(res == FALSE)
-            zmq_send(hpctfptr->responder, "INUSE\n",256,0);
+            zmq_send(hpctfptr->frontend, "INUSE\n",256,0);
         }
         else
         {
           // Disconnect, unknown player, slots full
-          zmq_send(hpctfptr->responder, "NACK\n",256,0);
+          zmq_send(hpctfptr->frontend, "NACK\n",256,0);
         }
         break;
       case STATUS:
         if((n = sprintf(buf, "%d\n", (hpctfptr->fs->field[cmdptr->y][cmdptr->x]).flag)) > 0)
         {
-          zmq_send(hpctfptr->responder, buf, 256, 0);
+          zmq_send(hpctfptr->frontend, buf, 256, 0);
         }
         break;
       case UNKNOWN:
@@ -165,7 +167,7 @@ void handlecommand(hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq)
   {
     printf("%s\n", "handlecommand, verification failed -> sending NACK");
     // Disconnect, unknown player, slots full
-    zmq_send(hpctfptr->responder, "NACK\n",256,0);
+    zmq_send(hpctfptr->frontend, "NACK\n",256,0);
 
     // drop command, validation failed
 
@@ -184,7 +186,7 @@ static void updgamesettings_task(void *args, zctx_t *ctx, void *pipe)
     printf("seq: %" PRId64 "\n", sequence++);
 
     char buffer[256];
-    int rc = zmq_recv(hpctf->responder, buffer, 256, 0);
+    int rc = zmq_recv(hpctf->frontend, buffer, 256, 0);
     if (rc == -1) 
     {
       errno = zmq_errno(); 
@@ -231,7 +233,7 @@ static int s_handlerupdgamesettings (zloop_t *loop, int timer_id, void *arg)
     printf("seq: %" PRId64 "\n", sequence++);
 
     char buffer[256];
-    int rc = zmq_recv(hpctf->responder, buffer, 256, 0);
+    int rc = zmq_recv(hpctf->frontend, buffer, 256, 0);
     if (rc == -1) 
     {
       errno = zmq_errno(); 
@@ -328,7 +330,7 @@ void startzmqserver(hpctf_game * hpctf)
   #endif
 
 
-  int rc1 = zmq_bind(hpctf->responder, "tcp://*:5555");
+  int rc1 = zmq_bind(hpctf->frontend, "tcp://*:5555");
   assert(rc1 == 0);
 
   int rc2 = zmq_bind(hpctf->fldpublisher, "tcp://*:5556");
