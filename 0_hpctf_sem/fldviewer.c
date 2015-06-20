@@ -104,13 +104,13 @@ int main(int argc, char const *argv[])
 
   void * updsubpipe = zthread_fork(ctx, updsubscriber_task, kvmap);
 
-  int size = getSize(kvmap);
+  int size = kvmap_getSize(kvmap);
   fldstruct * fs = initfield(size);
 
   while(!zctx_interrupted)
   {
     printf("zctx_interrupted %d zsys_interrupted %d\n", zctx_interrupted, zsys_interrupted );
-    size = getSize(kvmap);
+    size = kvmap_getSize(kvmap);
     if(fs->n != size)
     {
       freefield(fs); 
@@ -128,8 +128,8 @@ int main(int argc, char const *argv[])
     for (int y = 0; y < size/* && !zctx_interrupted*/; ++y)
       for (int x = 0; x < size/* && !zctx_interrupted*/; ++x)
       {
-        char * playername = getOwner(kvmap, x, y);
-        int plid = getPlayerId(kvmap, playername);
+        char * playername = kvmap_dupOwner(kvmap, x, y);
+        int plid = kvmap_getPlayerId(kvmap, playername);
         if(verbose)
           printf("%d:[%d][%d] - %d:\t%s\n", size, x, y, plid, playername);
         fs->field[y][x].flag = plid;
@@ -144,7 +144,7 @@ int main(int argc, char const *argv[])
         }
       }
     printfield(fs);
-    printGameSettings(kvmap);
+    kvmap_printGameSettings(kvmap);
     printf("%s\n", prntfld);
     free(prntfld);
 

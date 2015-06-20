@@ -278,7 +278,7 @@ static int s_timer_syncplid_event (zloop_t *loop, int timer_id, void *arg)
         
         if(!fldbool[plid])
         {
-          setPlayerid(hpctf->kvmap, hpctf->seq++, hpctf->fldpublisher, hpctf->plidx[plid], plid);
+          kvmap_setPlayerId(hpctf->kvmap, hpctf->seq++, hpctf->fldpublisher, hpctf->plidx[plid], plid);
           //printf("%d - %s \n", plid, hpctf->plidx[plid]);
           fldbool[plid] = TRUE;
         }   
@@ -294,8 +294,8 @@ static int s_timer_publishstate_event (zloop_t *loop, int timer_id, void *arg)
   hpctf_game * hpctf = (hpctf_game *)arg;
   if(hpctf && !zctx_interrupted)
   {
-    setState(hpctf->kvmap, hpctf->seq++, hpctf->fldpublisher, hpctf->gamestate);
-    setSize(hpctf->kvmap, hpctf->seq++, hpctf->fldpublisher, hpctf->fs->n);
+    kvmap_setState(hpctf->kvmap, hpctf->seq++, hpctf->fldpublisher, hpctf->gamestate);
+    kvmap_setSize(hpctf->kvmap, hpctf->seq++, hpctf->fldpublisher, hpctf->fs->n);
     printf("kvmsg state %d fldlen=%d\n", hpctf->gamestate, hpctf->fs->n);
   }
 

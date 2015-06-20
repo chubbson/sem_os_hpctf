@@ -174,13 +174,13 @@ void initplidx(hpctf_game *hpctf)
 int playerid(hpctf_game *hpctf, char * player)
 {
   char * ptmp = strdup(player);
-  int plid = getPlayerId(hpctf->kvmap, ptmp); 
+  int plid = kvmap_getPlayerId(hpctf->kvmap, ptmp); 
 
   if(plid == 0)
   {
-    int tmppid = newPlidx(hpctf->kvmap, hpctf->seq++);
+    int tmppid = kvmap_newPlidx(hpctf->kvmap, hpctf->seq++);
     hpctf->plidx[tmppid] = strdup(ptmp);
-    setPlayerid(hpctf->kvmap, hpctf->seq++, hpctf->fldpublisher, hpctf->plidx[tmppid], tmppid);
+    kvmap_setPlayerId(hpctf->kvmap, hpctf->seq++, hpctf->fldpublisher, hpctf->plidx[tmppid], tmppid);
     plid = tmppid;
   }
   free(ptmp);
@@ -192,7 +192,7 @@ int playerid_orig(hpctf_game *hpctf, char * player)
 {
 //  printf("player %s\n", player);
 //§k char * ptmp = strdup(player);
-  int plid = getPlayerId(hpctf->kvmap, player);
+  int plid = kvmap_getPlayerId(hpctf->kvmap, player);
   if (plid == 0)
   {
     for (int i = 0; i < MAXPLAYER; ++i)
@@ -203,7 +203,7 @@ int playerid_orig(hpctf_game *hpctf, char * player)
         hpctf->plidx[i] = strdup(player);
         if(!zctx_interrupted)
         {
-          setPlayerid(hpctf->kvmap, hpctf->seq++, hpctf->fldpublisher, player, plid);
+          kvmap_setPlayerId(hpctf->kvmap, hpctf->seq++, hpctf->fldpublisher, player, plid);
           printf("%s %d %s - plidx[%d]=%s\n", "playerIdStored", plid, player, i, hpctf->plidx[i]);
         }
       }
@@ -249,7 +249,7 @@ int capturetheflag(hpctf_game *hpctf, int x, int y, char * playername)// int pla
 
     if(!zctx_interrupted)
     {
-      setOwner(hpctf->kvmap, hpctf->seq++, hpctf->fldpublisher, x, y, ptmp);
+      kvmap_setOwner(hpctf->kvmap, hpctf->seq++, hpctf->fldpublisher, x, y, ptmp);
     }
 
     // send taken to player

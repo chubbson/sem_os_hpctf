@@ -10,50 +10,77 @@
 
 #include <gamehelper.h>
 
-
-char * getKvValue(zhash_t * kvmap, char * key)
+// dublicates value, using malloc, dont forget to free
+char * kvmap_dupKvValue(zhash_t * kvmap, char * key)
 {
+  char * res = NULL;
   kvmsg_t * kvmsg = (kvmsg_t *) zhash_lookup (kvmap, key);
   if(kvmsg != NULL)
   {
-    char * res = (char *)kvmsg_body (kvmsg);
-    //kvmsg_dump(kvmsg);
-    return res != NULL ? res : "";
+//    char * res = (char *)kvmsg_body (kvmsg);
+    res = strndup((char *)kvmsg_body (kvmsg), kvmsg_size(kvmsg));
   }
 
-  return "";
+  if (res == NULL)
+    res  = strdup("");
+  return res;
 }
 
-int getSize(zhash_t * kvmap)
+int kvmap_getIntKvValue(zhash_t * kvmap, char *key)
 {
-  return atoi(getKvValue(kvmap, "[fldlen]"));
+  char * sres = kvmap_dupKvValue(kvmap, key);
+  int res = atoi(sres);
+  free(sres);
+  return res; 
 }
 
-char * getOwner(zhash_t * kvmap, int x, int y)
+int kvmap_getSize(zhash_t * kvmap)
+{
+  return kvmap_getIntKvValue(kvmap, "[fldlen]");
+}
+
+// uses malloc inside, dont forget to free value
+char * kvmap_dupOwner(zhash_t * kvmap, int x, int y)
 {
   char buf[256];
   sprintf(buf, "[%d][%d]", x, y);
-  return getKvValue(kvmap, buf);
+  return kvmap_dupKvValue(kvmap, buf);
 }
 
-int getPlayerId(zhash_t * kvmap, char * playername)
+int kvmap_getPlayerId(zhash_t * kvmap, char * playername)
 {
   char buf[256];
   sprintf(buf, "{%s}", playername);
-  return atoi(getKvValue(kvmap, buf));
+  int ires = kvmap_getIntKvValue(kvmap, buf);
+  return ires;
 }
 
-int getState(zhash_t * kvmap)
+int kvmap_getState(zhash_t * kvmap)
 {
-  return atoi(getKvValue(kvmap, "[state]"));
+  return kvmap_getIntKvValue(kvmap, "[state]");
 }
 
-int getPlidxCnt(zhash_t * kvmap)
+int kvmap_getPlidxCnt(zhash_t * kvmap)
 {
-  return atoi(getKvValue(kvmap, "[plidxcnt]"));
+  return kvmap_getIntKvValue(kvmap, "[plidxcnt]");
 }
 
-void setState(zhash_t * kvmap, int seq, void * socket, int gamestate)
+// dont forget, free result 
+char * kvmap_dupWinner(zhash_t * kvmap)
+{
+  return kvmap_dupKvValue(kvmap, "[winner]");
+}
+
+void kvmap_setWinner(zhash_t * kvmap, int seq, char * playername)
+{
+  kvmsg_t *kvmsg = kvmsg_new(seq);
+  kvmsg_fmt_key(kvmsg, "[winner]");
+  kvmsg_fmt_body(kvmsg, playername);
+  kvmsg_send(kvmsg, socket);
+  kvmsg_store(&kvmsg, kvmap);
+}
+
+void kvmap_setState(zhash_t * kvmap, int seq, void * socket, int gamestate)
 {
   kvmsg_t *kvmsg = kvmsg_new(seq);
   kvmsg_fmt_key(kvmsg, "[state]");
@@ -62,7 +89,7 @@ void setState(zhash_t * kvmap, int seq, void * socket, int gamestate)
   kvmsg_store(&kvmsg, kvmap);
 }
 
-void setSize(zhash_t * kvmap, int seq, void * socket, int size)
+void kvmap_setSize(zhash_t * kvmap, int seq, void * socket, int size)
 {
   kvmsg_t *kvmsg = kvmsg_new(seq);
   kvmsg_fmt_key(kvmsg, "[fldlen]");
@@ -71,7 +98,7 @@ void setSize(zhash_t * kvmap, int seq, void * socket, int size)
   kvmsg_store(&kvmsg, kvmap);
 }
 
-void setOwner(zhash_t * kvmap, int seq, void * socket, int x, int y, char * playername)
+void kvmap_setOwner(zhash_t * kvmap, int seq, void * socket, int x, int y, char * playername)
 {
   kvmsg_t *kvmsg = kvmsg_new(seq);
   kvmsg_fmt_key(kvmsg, "[%d][%d]", x, y);
@@ -80,7 +107,7 @@ void setOwner(zhash_t * kvmap, int seq, void * socket, int x, int y, char * play
   kvmsg_store(&kvmsg, kvmap);
 }
 
-void setPlayerid(zhash_t * kvmap, int seq, void * socket, char * playername, int plid)
+void kvmap_setPlayerId(zhash_t * kvmap, int seq, void * socket, char * playername, int plid)
 {
   kvmsg_t *kvmsg = kvmsg_new(seq);
   kvmsg_fmt_key(kvmsg, "{%s}", playername);
@@ -89,7 +116,7 @@ void setPlayerid(zhash_t * kvmap, int seq, void * socket, char * playername, int
   kvmsg_store(&kvmsg, kvmap);
 }
 
-void setPlidxCnt(zhash_t * kvmap, int seq, void * socket, int plidx)//, void * socket)
+void kvmap_setPlidxCnt(zhash_t * kvmap, int seq, void * socket, int plidx)//, void * socket)
 {
   kvmsg_t *kvmsg = kvmsg_new(seq);
   kvmsg_fmt_key(kvmsg, "[plidxcnt]");
@@ -99,26 +126,37 @@ void setPlidxCnt(zhash_t * kvmap, int seq, void * socket, int plidx)//, void * s
   kvmsg_store(&kvmsg, kvmap);
 }
 
-int newPlidx(zhash_t * kvmap, int seq)
+int kvmap_newPlidx(zhash_t * kvmap, int seq)
 {
-  int plidxcnt = getPlidxCnt(kvmap);
+  int plidxcnt = kvmap_getPlidxCnt(kvmap);
   plidxcnt++; 
-  setPlidxCnt(kvmap, seq, NULL, plidxcnt);
+  kvmap_setPlidxCnt(kvmap, seq, NULL, plidxcnt);
   return plidxcnt;
 }
 
-void printGameSettings(zhash_t * kvmap)
+void kvmap_printGameSettings(zhash_t * kvmap)
 {
-  int state = getState(kvmap);
-  int size = getSize(kvmap);
+  int state = kvmap_getState(kvmap);
+  int size = kvmap_getSize(kvmap);
 
-  char * res = state == WAITING4PLAYERS
-        ? "WAITING4PLAYERS"
-        : state == RUNNING
-        ? "RUNNING"
-        : state == FINISHED
-        ? "FINISHED"
-        : ""; 
+  char * res = NULL;
+
+  switch(state)
+  {
+    case RUNNING:
+      res = "RUNNING";
+      break;
+    case WAITING4PLAYERS:
+      res = "WAITING4PLAYERS";
+      break;
+    case FINISHED:
+      res = "FINISHED";
+      break;
+    default: 
+      res = ""; 
+      break;
+  }
+
 
   printf("Gamestate: [%d]%s - Size: %d\n", state, res, size);
 }
