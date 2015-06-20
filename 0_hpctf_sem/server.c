@@ -55,8 +55,7 @@ void usage(int argc, char const *argv[])
     if(atoi(argv[i]) >= 4)
     {
       size = atoi(argv[i]);
-      printf("Size = 0\n");
-      //sscanf(argv[i], "-ms=%d", &updms);
+      printf("Size = %d\n", size);
     }
     else if(strcmp(argv[i], "-v") == 0)
     {  
@@ -391,14 +390,10 @@ int main(int argc, char const *argv[])
   {
     printcolor(i);
   }
+  puts("");
 
   usage(argc, argv);
   
-	//int n;
-	//if (argc < 2 || argc != 2 || (n = atoi(argv[1])) < 4)
-  //  usage(argv[0]);
-
-  //printf("n: %d\n", n);
 
   hpctf_game * hpctf = inithpctf(size);
   startzmqserver(hpctf);
