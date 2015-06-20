@@ -10,21 +10,6 @@
 
 #include <czmq.h>
 
-/*
-char * getKvValue(zhash_t * kvmap, char * key);
-int getSize(zhash_t * kvmap);
-char * getOwner(zhash_t * kvmap, int x, int y);
-int getPlayerId(zhash_t * kvmap, char * playername);
-int getState(zhash_t * kvmap);
-
-void setState(zhash_t * kvmap, int seq, void * socket, int gamestate);
-void setSize(zhash_t * kvmap, int seq, void * socket, int size);
-void setOwner(zhash_t * kvmap, int seq, void * socket, int x, int y, char * playername);
-void setPlayerid(zhash_t * kvmap, int seq, void * socket, char * playername, int plid);
-int newPlidx(zhash_t * kvmap, int seq);
-void printGameSettings(zhash_t * kvmap);
-*/
-
 // cuz of malloc, do not publish this mehtod. -> show in warning
 // char * dupKvValue(zhash_t * kvmap, char * key);
 int kvmap_getIntKvValue(zhash_t * kvmap, char *key);
