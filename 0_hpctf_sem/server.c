@@ -40,12 +40,36 @@ static void s_catch_signals(void)
   sigaction(SIGTERM, &action, NULL); 
 }
 
+int verbose = FALSE;
+int size = 0; 
  
 
-void usage(const char *argv)
+void usage(int argc, char const *argv[])
 {
-	printf("USAGE:\n\n%s fieldsizeGreater3\n", argv);
-  exit(1);
+  printf("USAGE:\n\n%s\n", argv[0]);
+  printf("\t4\tparsing int as size, must be greater or equal 4\n");
+  printf("\t-v\tVerbose\n");
+ 
+  for (int i = 1; i < argc; ++i)
+  {
+    if(atoi(argv[i]) >= 4)
+    {
+      size = atoi(argv[i]);
+      printf("Size = 0\n");
+      //sscanf(argv[i], "-ms=%d", &updms);
+    }
+    else if(strcmp(argv[i], "-v") == 0)
+    {  
+      verbose = TRUE; 
+    }
+  }
+
+  if(size < 4)
+  {
+    puts("start with field size of at least 4");
+    exit(0);
+  }
+
 } 
 
 void handlecommand(hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq)
@@ -367,14 +391,16 @@ int main(int argc, char const *argv[])
   {
     printcolor(i);
   }
+
+  usage(argc, argv);
   
-	int n;
-	if (argc < 2 || argc != 2 || (n = atoi(argv[1])) < 4)
-    usage(argv[0]);
+	//int n;
+	//if (argc < 2 || argc != 2 || (n = atoi(argv[1])) < 4)
+  //  usage(argv[0]);
 
-  printf("n: %d\n", n);
+  //printf("n: %d\n", n);
 
-  hpctf_game * hpctf = inithpctf(n);
+  hpctf_game * hpctf = inithpctf(size);
   startzmqserver(hpctf);
 
 //  printf("%s\n", "before free");
