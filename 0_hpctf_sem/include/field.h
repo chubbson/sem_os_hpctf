@@ -26,8 +26,5 @@ typedef struct {
 fldstruct * initfield(int n);
 void freefield(fldstruct *fs);
 int isfinished(fldstruct *fs);
-void printcolfield(int i);
-void printfield(fldstruct *fs);
-void sprintcolfield(int i, char *str);
 
 #endif
