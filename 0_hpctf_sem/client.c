@@ -26,10 +26,10 @@ int strat = 0;
 void usage(int argc, char const *argv[])
 {
   printf("USAGE:\n\n%s\n", argv[0]);
-  printf("\t-ms=5000\tUpdate in ms, default rand 1-1000ms\n");
+  printf("\t-ms=5000\tUpdate in ms, default rand 0-999ms\n");
   printf("\t-s=1\tStrategy 1-6 will calc with mod 6\n");
 
-  updms=(randof(1000)+1)*1;
+  updms=(randof(1000))*1;
   pid = getpid();
   strat = pid;
 
@@ -144,9 +144,10 @@ int sendTake(game_settings * gs, int x, int y, int pid)
 
 void strategie(game_settings * gs)
 {
+  int strategie = strat%6;
   int res = sendHello(gs);
   if(res)
-    switch(strat % 6)
+    switch(strategie)
     { 
       case 0:
         strategie1(pid, gs );
@@ -174,7 +175,6 @@ void strategie(game_settings * gs)
 
 int startzmqclient()
 {
-  game_settings * gs = malloc(sizeof(game_settings));
 
   // Socket to talk to clients
   printf("%s\n", "Connecting to hello world server ....");
@@ -182,6 +182,7 @@ int startzmqclient()
   void * requester = zmq_socket(context, ZMQ_REQ);
   zmq_connect(requester, "tcp://localhost:5555");
 
+  game_settings * gs = malloc(sizeof(game_settings));
   gs->requester = requester;
   gs->updms = updms;
 
@@ -200,7 +201,6 @@ int startzmqclient()
 int main(int argc, char const *argv[])
 {
   srandom ((unsigned) time (NULL));
-	//if (argc < 1 )//|| argc != 2 || (n = atoi(argv[1])) < 4)
   usage(argc, argv);
 
   printf("%s\n", "starting zmqclient");
