@@ -55,6 +55,7 @@ void printgamesettings(game_settings *gs)
   printf("MAXPLAYER: %d emptyslots: %d fullslots: %d fieldsize %d\n", MAXPLAYER, gs->emptyslots, gs->fullslots, gs->fieldsize);
 }
 
+/*
 void printplayer(hpctf_game *hpctf)
 {
   for (int i = 0; i < MAXPLAYER; ++i)
@@ -67,3 +68,4 @@ void printplayer(hpctf_game *hpctf)
     printf("%s = %s\n", fld, hpctf->plidx[i]);
   }
 }
+*/

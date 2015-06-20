@@ -23,6 +23,6 @@ void printgamestate(hpctf_game* hpctf);
 game_settings getgamesettings(hpctf_game *hpctf);
 game_settings gamesettings(int fieldsize);
 void printgamesettings(game_settings *gs);
-void printplayer(hpctf_game *hpctf);
+//void printplayer(hpctf_game *hpctf);
 
 #endif

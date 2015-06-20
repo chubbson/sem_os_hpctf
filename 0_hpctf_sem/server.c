@@ -370,6 +370,7 @@ void * threadwork_zmqserver(void *args)
 }
 */
 
+/*
 void * threadwork_printfld(void *args)
 {
   struct thread_info *tinfo = args;
@@ -383,6 +384,7 @@ void * threadwork_printfld(void *args)
 
   return NULL;
 }
+*/
 
 int main(int argc, char const *argv[])
 {

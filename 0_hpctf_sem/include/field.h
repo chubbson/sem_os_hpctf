@@ -11,6 +11,7 @@
 #include <apue.h>
 #include <itskylib.h>
 #include <pthread.h>
+#include <gameconst.h>
 
 typedef struct {
 	pthread_mutex_t mutex; 

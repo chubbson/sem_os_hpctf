@@ -5,7 +5,7 @@
 #include <itskylib.h>
 #include <czmq.h>
 #include <assert.h>
-#include <field.h>
+#include <fieldhelper.h>
 #include <kvmaphelper.h>
 
 #include <kvsimple.h>
@@ -93,7 +93,7 @@ static void updsubscriber_task(void *args, zctx_t *ctx, void *pipe)
 }
 
 
-
+/*
 int main(int argc, char const *argv[])
 {
   usage(argc, argv);
@@ -102,7 +102,7 @@ int main(int argc, char const *argv[])
   zctx_t *ctx = zctx_new ();
   zhash_t *kvmap = zhash_new ();
 
-  void * updsubpipe = zthread_fork(ctx, updsubscriber_task, kvmap);
+  zthread_fork(ctx, updsubscriber_task, kvmap);
 
   int size = kvmap_getSize(kvmap);
   fldstruct * fs = initfield(size);
@@ -125,8 +125,8 @@ int main(int argc, char const *argv[])
     char buf[15];
     buf[0] = '\0';
 
-    for (int y = 0; y < size/* && !zctx_interrupted*/; ++y)
-      for (int x = 0; x < size/* && !zctx_interrupted*/; ++x)
+    for (int y = 0; y < size; ++y)
+      for (int x = 0; x < size; ++x)
       {
         char * playername = kvmap_dupOwner(kvmap, x, y);
         int plid = kvmap_getPlayerId(kvmap, playername);
@@ -157,3 +157,48 @@ int main(int argc, char const *argv[])
   zctx_destroy (&ctx);
   return 0;
 }
+*/
+
+int main(int argc, char const *argv[])
+{
+  usage(argc, argv);
+
+  //  Prepare our context and updates socket
+  zctx_t *ctx = zctx_new ();
+  zhash_t *kvmap = zhash_new ();
+
+  zthread_fork(ctx, updsubscriber_task, kvmap);
+
+  int size = kvmap_getSize(kvmap);
+  fldstruct * fs = initfield(size);
+
+  while(!zctx_interrupted)
+  {
+    size = kvmap_getSize(kvmap);
+    if(fs->n != size)
+    {
+      freefield(fs); 
+      fs = initfield(size);
+    }
+
+    kvmap_printGameSettings(kvmap);
+    if(((rawfld == colfld) == FALSE) || colfld)
+    {
+      printfield(fs);
+      printplayer(kvmap, fs);  
+    }
+    if(rawfld)
+      fld_dump(kvmap, fs);
+
+    usleep(updms*1000);//0*((pid%5)+1));
+  }
+
+  if(verbose)
+    printf("zctx_interrupted %d zsys_interrupted %d\n", zctx_interrupted, zsys_interrupted );
+    
+  freefield(fs);
+  zhash_destroy (&kvmap);
+  zctx_destroy (&ctx);
+  return 0;
+}
+
