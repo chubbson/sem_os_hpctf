@@ -14,6 +14,6 @@
 void * printplayer(zhash_t * kvmap, fldstruct * fs);
 void * fld_dump(zhash_t * kvmap, fldstruct * fs);
 //void printfield(fld_t *fs);
-//void sprintcolfield(int i, char *str);
+void sprintcolfield(int i, char *str);
 
 #endif

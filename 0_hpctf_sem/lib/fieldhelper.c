@@ -60,3 +60,11 @@ void * fld_dump(zhash_t * kvmap, fldstruct * fs)
 
   return NULL; 
 }
+
+void sprintcolfield(int i, char *str)/*, int n, char * str*/
+{ 
+  if(str == NULL)
+    return;
+
+  scatcolor(i, str);
+} 

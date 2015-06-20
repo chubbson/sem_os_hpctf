@@ -55,14 +55,6 @@ int isfinished(fldstruct *fs)
 	return res;
 }
 
-void sprintcolfield(int i, char *str)/*, int n, char * str*/
-{	
-	if(str == NULL)
-		return;
-
-	scatcolor(i, str);
-} 
-
 void printfield(fldstruct *fs)
 {
 	int n2 = fs->n + 2;
