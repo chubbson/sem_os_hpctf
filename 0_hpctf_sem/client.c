@@ -232,7 +232,7 @@ void strategie(game_settings * gs)
 
         break;
       }
-
+      zclock_sleep(200);
     }
   }
 }
