@@ -18,7 +18,7 @@ void strategie2(int pid, game_settings * gs)
   while(res)
   {
     res = sendTake(gs, 2, 2, pid);
-    usleep(gs->updms*1000);
+    zclock_sleep(gs->updms);
   }
 }
 
@@ -33,7 +33,7 @@ void strategie3(int pid, game_settings * gs)
       for (int y = 0; y < gs->fieldsize && res; y++)
       {
         res = sendTake(gs, (basex+x)%gs->fieldsize, (basey+y)%gs->fieldsize, pid);
-        usleep(gs->updms*1000);
+        zclock_sleep(gs->updms);
       }
 }
 
@@ -47,11 +47,9 @@ void strategie4(int pid, game_settings * gs)
     for (int y = gs->fieldsize-1; y >= 0 && res; y--)
       for (int x = gs->fieldsize-1; x >= 0 && res; x--)
       {
-        printf("before take\n");
         res = sendTake(gs, (basex+x)%gs->fieldsize, (basey+y)%gs->fieldsize, pid);
-        printf(" after take\n");
-    //      zclock_sleep(gs->updms*1000);
-        usleep(gs->updms*1000);
+        zclock_sleep(gs->updms);
+        //usleep(gs->updms*1000);
       }
 }
 
@@ -66,7 +64,7 @@ void strategie5(int pid, game_settings * gs)
       for (int y = gs->fieldsize-1; y >= 0 && res; y--)
       {
         res = sendTake(gs, (basex+x)%gs->fieldsize, (basey+y)%gs->fieldsize, pid);
-        usleep(gs->updms*1000);
+                zclock_sleep(gs->updms);
       }
 }
 
@@ -77,7 +75,7 @@ void strategie6(int pid, game_settings * gs)
   while(res)
   {
     res = sendTake(gs, randof (gs->fieldsize), randof (gs->fieldsize), pid);
-    usleep(gs->updms*1000);
+    zclock_sleep(gs->updms);
   }
 }
 
@@ -93,6 +91,6 @@ void strategie1(int pid, game_settings * gs)
       for (int x = 0; x < gs->fieldsize && res; x++)
       {
         res = sendTake(gs, (basex+x)%gs->fieldsize, (basey+y)%gs->fieldsize, pid);
-        usleep(gs->updms*1000);
+        zclock_sleep(gs->updms);
       }
 }
