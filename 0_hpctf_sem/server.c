@@ -44,6 +44,8 @@ static void s_catch_signals(void)
 
 int verbose = FALSE;
 int size = 0; 
+
+int handlecommand(char * buf, hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq);
  
 
 void usage(int argc, char const *argv[])
@@ -72,6 +74,86 @@ void usage(int argc, char const *argv[])
   }
 
 } 
+
+//  Wortker using REQ socket to do load-balancing
+static void * worker_task(void *args)
+{
+  hpctf_game * hpctf = (hpctf_game *) args;
+
+  zctx_t * ctx = zctx_new();
+  void * worker = zsocket_new(ctx, ZMQ_REQ);
+  zsocket_connect (worker, "ipc://backend.ipc");
+
+  //  Tell broker we're ready for work
+  zframe_t *frame = zframe_new (WORKER_READY, 1);
+  puts("sending - WORKER_READY");
+  zframe_send (&frame, worker, 0);
+
+  int64_t sequence = 0; 
+
+
+  //  Process messages as they arrive
+  while (!zctx_interrupted) {
+    printf("seq: %" PRId64 "\n", sequence++);
+    zmsg_t *msg = zmsg_recv (worker);
+    if (!msg) 
+    {
+      errno = zmq_errno(); 
+      if (errno == EAGAIN) 
+      {
+        printf ("I: EAGAIN!\n"); 
+        continue; 
+      } 
+      if (errno == ETERM) 
+      { 
+        printf ("I: Terminated!\n"); 
+        break; 
+      } 
+      printf ("E: (%d) %s\n", errno, strerror(errno)); 
+      break; 
+    }
+
+    frame = zmsg_last (msg);
+//    if(verbose)
+//      zframe_print (frame, "Worker");
+
+    char * sval = zframe_strdup(frame);
+    if(sval)
+    {
+      cmd * cmdptr = parseandinitcommand(sval);
+      char scmd256[256];
+
+      int n = handlecommand(scmd256, hpctf, cmdptr, &sequence);
+      
+      printf("scmd256: '%s'\n", scmd256); 
+      if (n <= 0)
+      {
+        zframe_reset(frame, "NACK\n", 5);
+      }
+      else
+      {
+        zframe_reset(frame, scmd256, 256);
+      }
+      free(cmdptr);
+    }
+    else
+    {
+      zframe_reset(frame, "NACK\n", 5);
+    }
+
+//    if(verbose)
+//      zframe_print (zmsg_last (msg), "Worker: Send:");
+
+    printf("s_interrupted %d\n",s_interrupted );
+    zmsg_send (&msg, worker);
+    free(sval);
+  }
+
+  puts("zctx_interrupted %d\n");
+  zctx_destroy (&ctx);
+  return NULL;
+}
+
 
 int handlecommand(char * buf, hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq)
 {
@@ -113,25 +195,26 @@ int handlecommand(char * buf, hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq
 //        if((n = sprintf(buf, "SIZE %d\n", hpctfptr->fs->n)) > 0)
 //              zmq_send(hpctfptr->frontend, buf, 256, 0);
       case HELLO:
-        switch (logon(hpctfptr))
+        res = logon(hpctfptr);
+
+//res = logon(hpctfptr);
+        //rintf("%s\n", );
+        if(res == 0)
         {
-          case 0:
-            n = sprintf(buf, "SIZE %d\n", hpctfptr->fs->n);
-//              zmq_send(hpctfptr->frontend, buf, 256, 0);
-            break;
-          case 1:
-            // send async start
-            n = sprintf(buf, "SIZE %d\n", hpctfptr->fs->n);
-   //         {
-   //           zmq_send(hpctfptr->frontend, buf, 256, 0);
-   //           //zmq_send(frontend, "START\n",256,0); 
-   //         }
-            break;
-          case -1:
-          default:
-            n = sprintf(buf, "%s", "NACK\n");
-//            zmq_send(hpctfptr->frontend, "NACK\n",256,0);
-            break;
+          n = sprintf(buf, "%s", "NACK\n");
+        }
+        if(res & 0x01)
+        {
+          n = sprintf(buf, "SIZE %d\n", hpctfptr->fs->n);
+        }
+        if(res & 0x02)
+        {} // state switched to running
+        if(res & 0x04)
+        {
+          //if (verbose)
+            puts("starting new worker thread");
+          // start new worker thread
+          zthread_new(worker_task, hpctfptr);
         }
         break;
       case TAKE:
@@ -327,84 +410,6 @@ s_seq_cnt (zloop_t *loop, int timer_id, void *args)
 }
 */
 
-//  Wortker using REQ socket to do load-balancing
-static void * worker_task(void *args)
-{
-  hpctf_game * hpctf = (hpctf_game *) args;
-
-  zctx_t * ctx = zctx_new();
-  void * worker = zsocket_new(ctx, ZMQ_REQ);
-  zsocket_connect (worker, "ipc://backend.ipc");
-
-  //  Tell broker we're ready for work
-  zframe_t *frame = zframe_new (WORKER_READY, 1);
-  puts("sending - WORKER_READY");
-  zframe_send (&frame, worker, 0);
-
-  int64_t sequence = 0; 
-
-
-  //  Process messages as they arrive
-  while (!zctx_interrupted) {
-    printf("seq: %" PRId64 "\n", sequence++);
-    zmsg_t *msg = zmsg_recv (worker);
-    if (!msg) 
-    {
-      errno = zmq_errno(); 
-      if (errno == EAGAIN) 
-      {
-        printf ("I: EAGAIN!\n"); 
-        continue; 
-      } 
-      if (errno == ETERM) 
-      { 
-        printf ("I: Terminated!\n"); 
-        break; 
-      } 
-      printf ("E: (%d) %s\n", errno, strerror(errno)); 
-      break; 
-    }
-
-    frame = zmsg_last (msg);
-//    if(verbose)
-//      zframe_print (frame, "Worker");
-
-    char * sval = zframe_strdup(frame);
-    if(sval)
-    {
-      cmd * cmdptr = parseandinitcommand(sval);
-      char scmd256[256];
-
-      int n = handlecommand(scmd256, hpctf, cmdptr, &sequence);
-      
-      printf("scmd256: '%s'\n", scmd256); 
-      if (n <= 0)
-      {
-        zframe_reset(frame, "NACK\n", 5);
-      }
-      else
-      {
-        zframe_reset(frame, scmd256, 256);
-      }
-      free(cmdptr);
-    }
-    else
-    {
-      zframe_reset(frame, "NACK\n", 5);
-    }
-
-//    if(verbose)
-//      zframe_print (zmsg_last (msg), "Worker: Send:");
-
-    printf("s_interrupted %d\n",s_interrupted );
-    zmsg_send (&msg, worker);
-    free(sval);
-  }
-
-  puts("zctx_interrupted %d\n");
-  zctx_destroy (&ctx);
-  return NULL;
-}
 
 static int s_timer_syncfield_event (zloop_t * loop, int timer_id, void *arg)
 {

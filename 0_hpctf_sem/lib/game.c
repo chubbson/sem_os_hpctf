@@ -137,22 +137,35 @@ void freehpctf(hpctf_game * p_hpctf)
 
 int logon(hpctf_game *hpctf) 
 {
-	// decrease the number of free player slots
-	// if no slots available, wait for free slots
-	if(sem_trywait(&(hpctf->freeplayerslots)) == -1)
+  int retres = 0; 
+  // decrease the number of free player slots
+  // if no slots available, wait for free slots
+  if(sem_trywait(&(hpctf->freeplayerslots)) == -1)
     // check errno
-    return -1;
+    return retres;
 
   int val;
-  /*int res = */sem_getvalue(&hpctf->freeplayerslots, &val);
+  int res = sem_getvalue(&hpctf->freeplayerslots, &val);
+  int plcnt = MAXPLAYER - val;
+  printf("sem val: %d | %d | %d\n", val, res, plcnt);
 
-//debug  printf("sem val: %d | %d\n", val, res);
-  if(hpctf->gamestate != RUNNING && MAXPLAYER - val >= 2)
+
+  retres += 0x01; // player logged in 
+
+  if(hpctf->gamestate != RUNNING 
+  && (MAXPLAYER - val) >= (hpctf->fs->n/2))
   {  
     hpctf->gamestate = RUNNING;
-    return TRUE;
+    retres += 0x02; // state swiched to running
+  } 
+
+  if ((plcnt > 1 && plcnt%1 == 0))
+  {
+    retres += 0x04; // start new worker thread
   }
-  return FALSE;
+
+  return retres;
+
 }
 
 int logoff(hpctf_game *hpctf)
