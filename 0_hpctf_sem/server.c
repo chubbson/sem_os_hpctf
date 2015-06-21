@@ -440,7 +440,9 @@ void startzmqserver(hpctf_game * hpctf)
     signal (SIGTERM, s_signal_handler);
   #endif
 
-
+  hpctf->frontend = zsocket_new(hpctf->ctx, ZMQ_ROUTER);
+  hpctf->backend = zsocket_new(hpctf->ctx, ZMQ_ROUTER);
+  hpctf->fldpublisher = zsocket_new (hpctf->ctx, ZMQ_PUB);
   int rc1 = zmq_bind(hpctf->frontend, "tcp://*:5555");
   assert(rc1 == 0);
 
@@ -470,6 +472,7 @@ void startzmqserver(hpctf_game * hpctf)
   // run reactor
   zloop_start(hpctf->loop);
 
+  zloop_destroy(&hpctf->loop);
   printf("loop finished \n");
   return;
 }

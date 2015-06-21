@@ -96,19 +96,26 @@ void handlecommand(game_settings * gs, cmd * cmdptr)
 
 cmd * sendCmd(game_settings * gs, char * scmd)
 { 
-  char buffer[256];
+  char * buffer = malloc(sizeof(char)*256);//[256];
   snprintf(buffer, 256, "%s", scmd);
   printf("sending: %s\n", buffer);
-  /*int sentbytes = */zmq_send(gs->requester, buffer, 256, 0);
+  ///*int sentbytes = */zmq_send(gs->requester, buffer, 256, 0);
+  zstr_send(gs->requester, buffer);
   printf("receive\n");
-  int readbytes = zmq_recv(gs->requester, buffer, 256, 0);
-  printf("Received bytes: %d msg '%s' \n", readbytes, buffer);
-  if(readbytes > 0)
+
+//  int readbytes = zmq_recv(gs->requester, buffer, 256, 0);
+  buffer = zstr_recv(gs->requester);
+//  int readbytes = 5; 
+//  printf("Received bytes: %d msg '%s' \n", readbytes, &buffer[0]);
+  if(buffer!=NULL)
   {
     cmd * cmdptr = parseandinitcommand(buffer); 
     handlecommand(gs, cmdptr);
+    free(buffer);
     return cmdptr;
   } 
+  printf("buffer is null\n");
+  //free(buffer);
   return NULL;  
 }
 
