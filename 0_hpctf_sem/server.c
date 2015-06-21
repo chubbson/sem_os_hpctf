@@ -376,7 +376,6 @@ static void * worker_task(void *args)
       printf("scmd256: '%s'\n", scmd256); 
       if (n <= 0)
       {
-        puts("handlecommand failed");
         zframe_reset(frame, "NACK\n", 5);
       }
       else
@@ -398,6 +397,35 @@ static void * worker_task(void *args)
   }
   zctx_destroy (&ctx);
   return NULL;
+}
+
+static int s_timer_syncfield_event (zloop_t * loop, int timer_id, void *arg)
+{
+  //sync players
+  hpctf_game * hpctf = (hpctf_game*)arg;
+
+  if(hpctf)
+  {
+//    if(hpctf->verbose)
+//      printf("n: %d\n",hpctf->fs->n);
+    for (int x = 0; x < hpctf->fs->n; x++)//n; x++)
+      for (int y = 0; y < hpctf->fs->n; y++)//n; y++)
+      {
+        int plid = hpctf->fs->field[y][x].flag; 
+//        if(hpctf->verbose)
+//          printf("hpctf->fs->field[%d][%d].flag: %d\n", y,x,plid);
+        if (plid > 0)
+        {
+          char * ptmp = strdup(hpctf->plidx[plid]);
+          if(ptmp)
+            kvmap_setOwner(hpctf->kvmap, hpctf->seq++, hpctf->fldpublisher, x, y, ptmp);
+
+          free(ptmp);
+        }
+      }
+  }
+
+  return 0;
 }
 
 
@@ -432,7 +460,7 @@ void startzmqserver(hpctf_game * hpctf)
 
   zloop_timer(hpctf->loop, 1000, 0, s_timer_publishstate_event, hpctf);
   zloop_timer(hpctf->loop, 1000, 0, s_timer_syncplid_event, hpctf);
-
+  zloop_timer(hpctf->loop, 1000, 0, s_timer_syncfield_event, hpctf);
 //  zloop_timer(hpctf->loop, 1000, 1, s_handlerupdgamesettings, hpctf);
 
 
