@@ -15,6 +15,8 @@
 #include <gamehelper.h>
 #include <clistrategies.h>
 #include <client.h>
+#include <kvsimple.h>
+#include <kvmaphelper.h>
 
 
 int updms = 5000;
@@ -28,7 +30,6 @@ void usage(int argc, char const *argv[])
   printf("\t-ms=250\tUpdate in ms, default rand 0-999ms\n");
   printf("\t-s=1\tStrategy 1-6 will calc with mod 6\n");
   printf("\t-v\tverbose\n");
-  printf("HINT:\n\n%s\n\n", "Force quit with ctr-z, ctrl-c will send next take without sleep");
 
   updms=(randof(1000))*1;
   pid = getpid();
@@ -36,7 +37,7 @@ void usage(int argc, char const *argv[])
 
   for (int i = 0; i < argc; ++i)
   {
-    if(strncmp(argv[i], "-v=", 3) == 0)
+    if(strncmp(argv[i], "-v", 3) == 0)
     {  
       verbose = TRUE;
       continue;
@@ -54,7 +55,7 @@ void usage(int argc, char const *argv[])
   }
 }  
 
-void handlecommand(game_settings * gs, cmd * cmdptr)
+void cli_handlecommand(game_settings * gs, cmd * cmdptr)
 {
   if(verbose)
     cmd_dump(cmdptr);
@@ -75,10 +76,10 @@ void handlecommand(game_settings * gs, cmd * cmdptr)
         // start
         break;
       case TAKEN:
-        printf("%s\n", "ctf succeed");
+        //printf("%s\n", "ctf succeed");
         break;
       case INUSE:
-        printf("%s\n", "ctf failed");
+        //printf("%s\n", "ctf failed");
         break;
       case PLAYER:
         //printf("%d\n", cmdptr->player);
@@ -137,8 +138,11 @@ cmd * sendCmd(game_settings * gs, char * scmd)
   zmsg_t *reply = NULL;
   cmd * cmdrepl = NULL;
 
-  for (int retries = 0; retries < MAX_RETRIES; retries++) 
+  for (int retries = 0; retries < MAX_RETRIES && !zsys_interrupted; retries++) 
   {
+    printf("zctx_interrupted %d, zsys_interrupted %d\n", zctx_interrupted, zsys_interrupted);
+    if (verbose)
+      printf("Send: %s\n", buffer);
     //zmsg_send (&request, gs->requester);
     //reply = zmsg_recv(gs->requester);
     reply  = s_try_request (gs->ctx, gs->endpoint, request);
@@ -146,8 +150,6 @@ cmd * sendCmd(game_settings * gs, char * scmd)
     if(reply)
     {
       buffer = zframe_strdup(zmsg_last (reply));
-      if (verbose)
-        printf("buffer: %s\n", buffer);
       break;
     }
     printf ("W: no response from %s, retrying...\n", gs->endpoint);
@@ -155,7 +157,7 @@ cmd * sendCmd(game_settings * gs, char * scmd)
   if(reply)
   {
     cmdrepl = parseandinitcommand(buffer); 
-    handlecommand(gs, cmdrepl);
+    cli_handlecommand(gs, cmdrepl);
   } 
 
   zmsg_destroy(&request);
@@ -169,7 +171,7 @@ int sendHello(game_settings * gs)
   int retres = FALSE;
   cmd * cmdptr = sendCmd(gs, "HELLO \n");
 
-  if(cmdptr && cmdptr->command == SIZE)
+  if(cmdptr && (cmdptr->command == SIZE))
     retres = TRUE;
 
   if (cmdptr)
@@ -196,32 +198,90 @@ int sendTake(game_settings * gs, int x, int y, int pid)
 
 void strategie(game_settings * gs)
 {
-  int strategie = strat%6;
+  int modstrat = strat%6;
+
   int res = sendHello(gs);
   if(res)
-    switch(strategie)
-    { 
-      case 0:
-        strategie1(pid, gs );
+  {
+    while(!zsys_interrupted)
+    {
+      if(kvmap_getState(gs->kvmap) == 1)
+      {
+        switch(modstrat)
+        { 
+          case 0:
+            strategie1(pid, gs );
+            break;
+          case 1: 
+            strategie2(pid, gs );
+            break;
+          case 2: 
+            strategie3(pid, gs );
+            break;
+          case 3: 
+            strategie4(pid, gs );
+            break;
+          case 4: 
+            strategie5(pid, gs );
+            break;
+          case 5: 
+          default:
+            strategie6(pid, gs );
+            break;
+        }
+
         break;
-      case 1: 
-        strategie2(pid, gs );
-        break;
-      case 2: 
-        strategie3(pid, gs );
-        break;
-      case 3: 
-        printf("strat4\n");
-        strategie4(pid, gs );
-        break;
-      case 4: 
-        strategie5(pid, gs );
-        break;
-      case 5: 
-      default:
-        strategie6(pid, gs );
-        break;
+      }
+
     }
+  }
+}
+
+static void updsubscriber_task(void *args, zctx_t *ctx, void *pipe)
+{
+  zhash_t * kvmap = (zhash_t *)args;
+
+  void * updsub = zsocket_new (ctx, ZMQ_SUB);
+  zsocket_set_subscribe (updsub, "");
+  zsocket_connect (updsub, "tcp://localhost:5556");
+
+  int64_t sequence = 0;
+
+  while (!zctx_interrupted) {
+      sequence++;
+      kvmsg_t *kvmsg = kvmsg_recv (updsub);
+      if (!kvmsg)
+      {
+        errno = zmq_errno(); 
+        if (errno == EAGAIN) 
+        { printf("I: EAGAIN! continue\n");
+          continue; } 
+        if (errno == ETERM) 
+        { printf ("I: Terminated!\n"); 
+          zctx_interrupted = 1; 
+          break; 
+        } 
+        printf ("E: (%d) %s\n", errno, strerror(errno)); 
+        break;          //  Interrupted
+      }
+ 
+      
+      if (strcmp(kvmsg_key(kvmsg), "[state]") == 0)
+      {
+        if (verbose)
+          kvmsg_dump(kvmsg);
+        kvmsg_store (&kvmsg, kvmap);
+      }
+      else
+        kvmsg_destroy(&kvmsg);
+  }
+
+  zsocket_destroy (ctx, updsub);
+  //zsys_interrupted = 1; 
+
+  char buf[100];
+  snprintf(buf, 100, "updsubscriber_task, Interrupted\n%" PRId64 "messages in\n", sequence);
+  puts(buf);
 }
 
 
@@ -232,20 +292,26 @@ int startzmqclient()
   // Socket to talk to clients
   printf("%s\n", "Connecting to hello world server ....");
   zctx_t * context = zctx_new();// zmq_ctx_new();
+
 //  void * context = zmq_ctx_new();
 //  void * requester = zmq_socket(context, ZMQ_REQ);
 //  zmq_connect(requester, "tcp://localhost:5555");
 
+  zhash_t *kvmap = zhash_new ();
   game_settings * gs = malloc(sizeof(game_settings));
 //  gs->requester = requester;
   gs->endpoint = "tcp://localhost:5555";
   gs->updms = updms;
   gs->ctx = context; 
+  gs->kvmap = kvmap;
 
+  zthread_fork(context, updsubscriber_task, kvmap);
   strategie(gs);
 
   printf("%s\n", "exit client");
 
+
+  zhash_destroy (&gs->kvmap);
 // zmq_close(requester);
   zctx_destroy(&context);
 //  zmq_ctx_destroy(context);

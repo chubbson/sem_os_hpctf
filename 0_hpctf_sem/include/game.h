@@ -18,7 +18,7 @@
 
 
 typedef struct {
-	enum { WAITING4PLAYERS, RUNNING, FINISHED } gamestate;
+	enum { WAITING4PLAYERS = 0, RUNNING = 1, FINISHED =2 } gamestate;
 	fldstruct * fs;
   sem_t freeplayerslots;
   int winner;

@@ -93,7 +93,6 @@ cmd * initcommand(int argc, char *argv[])
   cmdptr->x = 0;
   cmdptr->y = 0; 
   cmdptr->playername = ""; 
-  printf("argc: %d: %s\n", argc, argv[0]);
   if(strcmp(argv[0], "HELLO") == 0 && argc == 1)
   {
     cmdptr->command = HELLO;

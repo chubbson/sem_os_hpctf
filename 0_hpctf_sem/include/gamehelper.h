@@ -17,6 +17,7 @@ typedef struct {
   int fieldsize;
   void * requester;
   char * endpoint;
+  zhash_t * kvmap;
   zctx_t * ctx;
   int updms;
 } game_settings; //playerslots;
