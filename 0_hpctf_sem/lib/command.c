@@ -93,6 +93,7 @@ cmd * initcommand(int argc, char *argv[])
   cmdptr->x = 0;
   cmdptr->y = 0; 
   cmdptr->playername = ""; 
+  printf("argc: %d: %s\n", argc, argv[0]);
   if(strcmp(argv[0], "HELLO") == 0 && argc == 1)
   {
     cmdptr->command = HELLO;
@@ -133,10 +134,18 @@ cmd * initcommand(int argc, char *argv[])
     cmdptr->x = atoi(argv[1]);
     cmdptr->y = atoi(argv[2]);
   }
-  else if(strcmp(argv[0], "END") == 0 && argc == 2)
+  else if(strcmp(argv[0], "END") == 0 && argc >= 2)
   {
+    char tmppn[256]; 
     cmdptr->command = END;
-    cmdptr->playername = argv[1]; // atoi(argv[1]);
+    cmdptr->playername = argc > 2
+                          ? sprintf(tmppn, "%s%s", argv[1], argv[2]) > 0
+                              ? strdup(tmppn)
+                              : argv[2]
+                          : argv[1];
+    
+
+   // cmdptr->playername = argv[1]; // atoi(argv[1]);
   }
 ///  else if((cmdptr->player = atoi(argv[0])) > 0)
 ///  {

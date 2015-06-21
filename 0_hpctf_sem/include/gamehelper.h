@@ -9,12 +9,15 @@
 #define _LIB_HPWOTP_HPCTF_GAMEHELPER
 
 #include <game.h>
+#include <czmq.h>
 
 typedef struct {
   int fullslots; // side length
   int emptyslots; 
   int fieldsize;
   void * requester;
+  char * endpoint;
+  zctx_t * ctx;
   int updms;
 } game_settings; //playerslots;
 

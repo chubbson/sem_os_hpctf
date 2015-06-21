@@ -47,7 +47,10 @@ void strategie4(int pid, game_settings * gs)
     for (int y = gs->fieldsize-1; y >= 0 && res; y--)
       for (int x = gs->fieldsize-1; x >= 0 && res; x--)
       {
+        printf("before take\n");
         res = sendTake(gs, (basex+x)%gs->fieldsize, (basey+y)%gs->fieldsize, pid);
+        printf(" after take\n");
+    //      zclock_sleep(gs->updms*1000);
         usleep(gs->updms*1000);
       }
 }

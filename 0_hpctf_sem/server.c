@@ -343,6 +343,7 @@ static void * worker_task(void *args)
 
   int64_t sequence = 0; 
 
+
   //  Process messages as they arrive
   while (!zctx_interrupted) {
     printf("seq: %" PRId64 "\n", sequence++);
@@ -351,7 +352,10 @@ static void * worker_task(void *args)
     {
       errno = zmq_errno(); 
       if (errno == EAGAIN) 
-      { continue; } 
+      {
+        printf ("I: EAGAIN!\n"); 
+        continue; 
+      } 
       if (errno == ETERM) 
       { 
         printf ("I: Terminated!\n"); 
@@ -392,9 +396,12 @@ static void * worker_task(void *args)
 //    if(verbose)
 //      zframe_print (zmsg_last (msg), "Worker: Send:");
 
+    printf("s_interrupted %d\n",s_interrupted );
     zmsg_send (&msg, worker);
     free(sval);
   }
+
+  puts("zctx_interrupted %d\n");
   zctx_destroy (&ctx);
   return NULL;
 }

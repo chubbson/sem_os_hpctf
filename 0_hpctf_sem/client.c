@@ -38,12 +38,12 @@ void usage(int argc, char const *argv[])
     if(strncmp(argv[i], "-s=", 3) == 0)
     {  
       sscanf(argv[i], "-s=%d", &strat);
-      break;
+      continue;
     }
     if(strncmp(argv[i], "-ms=", 4) == 0)
     {
       sscanf(argv[i], "-ms=%d", &updms);
-      break;
+      continue;
     }
   }
 }  
@@ -91,32 +91,110 @@ void handlecommand(game_settings * gs, cmd * cmdptr)
   {
     // drop command, validation failed
   }
-
+  printf("leave handle commad\n");
 }
+
+#define REQUEST_TIMEOUT     1000
+#define MAX_RETRIES         3       //  Before we abandon
+
+static zmsg_t * 
+s_try_request(zctx_t *ctx, char * endpoint, zmsg_t *request)
+{
+
+//  void * requester = zmq_socket(ctx, ZMQ_REQ);
+//  zmq_connect(requester, "tcp://localhost:5555");
+  void * client = zsocket_new(ctx, ZMQ_REQ);
+  zsocket_connect(client, endpoint);
+
+  //printf("%s\n", zstr_recv(client)); 
+    zmsg_t *msg = zmsg_dup (request);
+    zmsg_send (&msg, client);
+    zmq_pollitem_t items [] = { { client, 0, ZMQ_POLLIN, 0 } };
+    zmq_poll (items, 1, REQUEST_TIMEOUT * ZMQ_POLL_MSEC);
+    zmsg_t *reply = NULL;
+    if (items [0].revents & ZMQ_POLLIN)
+      reply = zmsg_recv (client);
+    //  Close socket in any case, we're done with it now
+    zsocket_destroy (ctx, client);
+    return reply;
+}
+
 
 cmd * sendCmd(game_settings * gs, char * scmd)
 { 
   char * buffer = malloc(sizeof(char)*256);//[256];
   snprintf(buffer, 256, "%s", scmd);
   printf("sending: %s\n", buffer);
+
+
+    
+  zmsg_t *request = zmsg_new ();
+  zmsg_addstr (request, buffer);
+  zmsg_t *reply = NULL;
+  cmd * cmdrepl = NULL;
+/*
+    zstr_send(gs->requester, buffer);
+    buffer = zstr_recv(gs->requester);
+
+  if(buffer)
+  {
+    cmdrepl = parseandinitcommand(buffer); 
+    handlecommand(gs, cmdrepl);
+    free(buffer);
+  }*/
+
+  for (int retries = 0; retries < MAX_RETRIES; retries++) 
+  {
+    //zmsg_send (&request, gs->requester);
+    //reply = zmsg_recv(gs->requester);
+    reply  = s_try_request (gs->ctx, gs->endpoint, request);
+    
+    if(reply)
+    {
+      buffer = zframe_strdup(zmsg_last (reply));
+      printf("buffer: %s\n", buffer);
+      break;
+    }
+    printf ("W: no response from %s, retrying...\n", gs->endpoint);
+  }
+  if(reply)
+  {
+    cmdrepl = parseandinitcommand(buffer); 
+    handlecommand(gs, cmdrepl);
+    free(buffer);
+  } 
+
+  zmsg_destroy(&request);
+  zmsg_destroy(&reply);
+  //free(buffer);
+  //cmd_dump(cmdrepl);
+  return cmdrepl;  
+////  printf("response: '%s'",zframe_strdup(zmsg_last (reply)); 
+    
+//  printf("buffer: '%s'\n", buffer);
+//  printf("req\n");
+//  zmsg_dump(reply);
+
+//  printf("after zmsg_dump\n");
   ///*int sentbytes = */zmq_send(gs->requester, buffer, 256, 0);
-  zstr_send(gs->requester, buffer);
-  printf("receive\n");
+////  zstr_send(gs->requester, buffer);
+////  printf("receive\n");
 
 //  int readbytes = zmq_recv(gs->requester, buffer, 256, 0);
-  buffer = zstr_recv(gs->requester);
+////  buffer = zstr_recv(gs->requester);
+
+
 //  int readbytes = 5; 
 //  printf("Received bytes: %d msg '%s' \n", readbytes, &buffer[0]);
-  if(buffer!=NULL)
+/*  if(buffer!=NULL)
   {
     cmd * cmdptr = parseandinitcommand(buffer); 
     handlecommand(gs, cmdptr);
     free(buffer);
     return cmdptr;
   } 
-  printf("buffer is null\n");
-  //free(buffer);
-  return NULL;  
+*/
+
 }
 
 int sendHello(game_settings * gs)
@@ -124,7 +202,7 @@ int sendHello(game_settings * gs)
   int retres = FALSE;
   cmd * cmdptr = sendCmd(gs, "HELLO \n");
 
-  if(cmdptr->command == SIZE)
+  if(cmdptr && cmdptr->command == SIZE)
     retres = TRUE;
 
   if (cmdptr)
@@ -147,6 +225,7 @@ int sendTake(game_settings * gs, int x, int y, int pid)
   if(cmdptr)
     free(cmdptr);
 
+  printf("taken res : %d\n", retres);
   return retres;
 }
 
@@ -167,6 +246,7 @@ void strategie(game_settings * gs)
         strategie3(pid, gs );
         break;
       case 3: 
+        printf("strat4\n");
         strategie4(pid, gs );
         break;
       case 4: 
@@ -186,20 +266,24 @@ int startzmqclient()
 
   // Socket to talk to clients
   printf("%s\n", "Connecting to hello world server ....");
-  void * context = zmq_ctx_new();
-  void * requester = zmq_socket(context, ZMQ_REQ);
-  zmq_connect(requester, "tcp://localhost:5555");
+  zctx_t * context = zctx_new();// zmq_ctx_new();
+//  void * context = zmq_ctx_new();
+//  void * requester = zmq_socket(context, ZMQ_REQ);
+//  zmq_connect(requester, "tcp://localhost:5555");
 
   game_settings * gs = malloc(sizeof(game_settings));
-  gs->requester = requester;
+//  gs->requester = requester;
+  gs->endpoint = "tcp://localhost:5555";
   gs->updms = updms;
+  gs->ctx = context; 
 
   strategie(gs);
 
   printf("%s\n", "exit client");
 
-  zmq_close(requester);
-  zmq_ctx_destroy(context);
+// zmq_close(requester);
+  zctx_destroy(&context);
+//  zmq_ctx_destroy(context);
 
   free(gs);
 
