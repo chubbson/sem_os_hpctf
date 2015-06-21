@@ -28,6 +28,7 @@ void usage(int argc, char const *argv[])
   printf("\t-ms=250\tUpdate in ms, default rand 0-999ms\n");
   printf("\t-s=1\tStrategy 1-6 will calc with mod 6\n");
   printf("\t-v\tverbose\n");
+  printf("HINT:\n\n%s\n\n", "Force quit with ctr-z, ctrl-c will send next take without sleep");
 
   updms=(randof(1000))*1;
   pid = getpid();
