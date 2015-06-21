@@ -73,10 +73,10 @@ void usage(int argc, char const *argv[])
 
 } 
 
-void handlecommand(hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq)
+int handlecommand(char * buf, hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq)
 {
-  char buf[256];
-  int n;
+//  char buf[256];
+  int n = 0;
   game_settings gs = getgamesettings(hpctfptr);
   cmd_dump(cmdptr);
 
@@ -93,7 +93,8 @@ void handlecommand(hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq)
 //                      hpctfptr->winner, 
                       hpctfptr->winnername)) > 0)
       {
-        zmq_send(hpctfptr->frontend, buf, 256, 0);
+
+//        zmq_send(hpctfptr->frontend, buf, 256, 0);
         logoff(hpctfptr);
         //zmq_send(frontend, "START\n",256,0); 
       }
@@ -106,27 +107,28 @@ void handlecommand(hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq)
     {
       //case UNKNOWN:
       //  break;
-      case SIZE: 
-        if((n = sprintf(buf, "SIZE %d\n", hpctfptr->fs->n)) > 0)
-              zmq_send(hpctfptr->frontend, buf, 256, 0);
+//      case SIZE: 
+//        if((n = sprintf(buf, "SIZE %d\n", hpctfptr->fs->n)) > 0)
+//              zmq_send(hpctfptr->frontend, buf, 256, 0);
       case HELLO:
         switch (logon(hpctfptr))
         {
           case 0:
-            if((n = sprintf(buf, "SIZE %d\n", hpctfptr->fs->n)) > 0)
-              zmq_send(hpctfptr->frontend, buf, 256, 0);
+            n = sprintf(buf, "SIZE %d\n", hpctfptr->fs->n);
+//              zmq_send(hpctfptr->frontend, buf, 256, 0);
             break;
           case 1:
             // send async start
-            if((n = sprintf(buf, "SIZE %d\n", hpctfptr->fs->n)) > 0)
-            {
-              zmq_send(hpctfptr->frontend, buf, 256, 0);
-              //zmq_send(frontend, "START\n",256,0); 
-            }
+            n = sprintf(buf, "SIZE %d\n", hpctfptr->fs->n);
+   //         {
+   //           zmq_send(hpctfptr->frontend, buf, 256, 0);
+   //           //zmq_send(frontend, "START\n",256,0); 
+   //         }
             break;
           case -1:
           default:
-            zmq_send(hpctfptr->frontend, "NACK\n",256,0);
+            n = sprintf(buf, "%s", "NACK\n");
+//            zmq_send(hpctfptr->frontend, "NACK\n",256,0);
             break;
         }
         break;
@@ -137,28 +139,26 @@ void handlecommand(hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq)
                                  cmdptr->y, 
                                  cmdptr->playername)) >= 0)
         {
-          if(res == TRUE)
-          {
-            zmq_send(hpctfptr->frontend, "TAKEN\n",256,0);
-          }
-          // finished 
-          if(res == FALSE)
-            zmq_send(hpctfptr->frontend, "INUSE\n",256,0);
+          n = res 
+              ? sprintf(buf, "%s", "TAKEN\n")
+              : sprintf(buf, "%s", "INUSE\n");
         }
         else
         {
           // Disconnect, unknown player, slots full
-          zmq_send(hpctfptr->frontend, "NACK\n",256,0);
+          n = sprintf(buf, "NACK\n");
         }
         break;
       case STATUS:
-        if((n = sprintf(buf, "%d\n", (hpctfptr->fs->field[cmdptr->y][cmdptr->x]).flag)) > 0)
-        {
-          zmq_send(hpctfptr->frontend, buf, 256, 0);
-        }
+        n = sprintf(buf, "%d\n", (hpctfptr->fs->field[cmdptr->y][cmdptr->x]).flag);
+        //if((n = sprintf(buf, "%d\n", (hpctfptr->fs->field[cmdptr->y][cmdptr->x]).flag)) > 0)
+        //{
+        //  zmq_send(hpctfptr->frontend, buf, 256, 0);
+        //}
         break;
       case UNKNOWN:
       default:
+        printf("unknown command\n");
         // drop command 
         break;
     }    
@@ -167,11 +167,10 @@ void handlecommand(hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq)
   {
     printf("%s\n", "handlecommand, verification failed -> sending NACK");
     // Disconnect, unknown player, slots full
-    zmq_send(hpctfptr->frontend, "NACK\n",256,0);
-
-    // drop command, validation failed
-
+    n = sprintf(buf, "%s", "NACK\n");
   } 
+
+  return n; 
 }
 
 
@@ -204,8 +203,14 @@ static void updgamesettings_task(void *args, zctx_t *ctx, void *pipe)
 
     printf("Received bytes: %d msg %s", rc, buffer);
     cmd * cmdptr = parseandinitcommand(buffer);
-    handlecommand(hpctf, cmdptr, &sequence);
+    char scmd256[256];
+    int n = handlecommand(scmd256, hpctf, cmdptr, &sequence);
     printf("%s\n", "after hanlde command");
+    if (n <= 0)
+    {
+      puts("handlecommand failed");
+    }
+    zmq_send(hpctf->frontend, scmd256,256,0); 
     free(cmdptr);
   }
   if (zctx_interrupted)//s_interrupted == 1)
