@@ -34,6 +34,7 @@ typedef struct {
   int64_t seq;
 //  int testvar;
   zlist_t * workers;
+  int verbose;
 
 } hpctf_game;
 

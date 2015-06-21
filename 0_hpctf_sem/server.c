@@ -275,6 +275,7 @@ static int s_handlerupdgamesettings (zloop_t *loop, int timer_id, void *arg)
 
 static int s_timer_syncplid_event (zloop_t *loop, int timer_id, void *arg)
 {
+  puts("s_timer_syncplid_event");
   //sync players
   bool fldbool[MAXPLAYER] = {FALSE};
   hpctf_game * hpctf = (hpctf_game *)arg;
@@ -299,17 +300,16 @@ static int s_timer_syncplid_event (zloop_t *loop, int timer_id, void *arg)
 
 static int s_timer_publishstate_event (zloop_t *loop, int timer_id, void *arg)
 {
-  printf("s_timer_publishstate_event\n");
+  puts("s_timer_publishstate_event");
   hpctf_game * hpctf = (hpctf_game *)arg;
   if(hpctf && !zctx_interrupted)
   {
     kvmap_setState(hpctf->kvmap, hpctf->seq++, hpctf->fldpublisher, hpctf->gamestate);
     kvmap_setSize(hpctf->kvmap, hpctf->seq++, hpctf->fldpublisher, hpctf->fs->n);
-    printf("kvmsg state %d fldlen=%d\n", hpctf->gamestate, hpctf->fs->n);
+    if(hpctf->verbose)
+      printf("kvmsg state %d fldlen=%d\n", hpctf->gamestate, hpctf->fs->n);
   }
-
   return 0;
-
 }
 
 /*
@@ -401,19 +401,20 @@ static void * worker_task(void *args)
 
 static int s_timer_syncfield_event (zloop_t * loop, int timer_id, void *arg)
 {
+  puts("s_timer_syncfield_event");
   //sync players
   hpctf_game * hpctf = (hpctf_game*)arg;
 
   if(hpctf)
   {
-//    if(hpctf->verbose)
-//      printf("n: %d\n",hpctf->fs->n);
+    if(hpctf->verbose)
+      printf("n: %d\n",hpctf->fs->n);
     for (int x = 0; x < hpctf->fs->n; x++)//n; x++)
       for (int y = 0; y < hpctf->fs->n; y++)//n; y++)
       {
         int plid = hpctf->fs->field[y][x].flag; 
-//        if(hpctf->verbose)
-//          printf("hpctf->fs->field[%d][%d].flag: %d\n", y,x,plid);
+        if(hpctf->verbose)
+          printf("hpctf->fs->field[%d][%d].flag: %d\n", y,x,plid);
         if (plid > 0)
         {
           char * ptmp = strdup(hpctf->plidx[plid]);
@@ -520,6 +521,7 @@ int main(int argc, char const *argv[])
   
 
   hpctf_game * hpctf = inithpctf(size);
+  hpctf->verbose = verbose; 
   startzmqserver(hpctf);
 
 //  printf("%s\n", "before free");
