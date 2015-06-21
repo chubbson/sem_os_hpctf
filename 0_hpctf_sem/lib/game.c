@@ -63,8 +63,11 @@ hpctf_game * inithpctf(int mapsize)
   p_hpctf->ctx = zctx_new ();
   p_hpctf->kvmap = zhash_new ();
   p_hpctf->loop = zloop_new ();
+  p_hpctf->workers = zlist_new ();
 
-  p_hpctf->frontend = zsocket_new (p_hpctf->ctx, ZMQ_REP);
+  p_hpctf->frontend = zsocket_new(p_hpctf->ctx, ZMQ_ROUTER);
+  p_hpctf->backend = zsocket_new(p_hpctf->ctx, ZMQ_ROUTER);
+  //p_hpctf->frontend = zsocket_new (p_hpctf->ctx, ZMQ_REP);
   p_hpctf->fldpublisher = zsocket_new (p_hpctf->ctx, ZMQ_PUB);
 //  zsocket_bind (p_hpctf->fldpublisher, "tcp://*:%d", 5556 + 1);
   //p_hpctf->responder = zsocket_new (p_hpctf->ctx, ZMQ_REP);
@@ -83,9 +86,18 @@ void freehpctf(hpctf_game * p_hpctf)
   rc = zsocket_wait (reader);
   assert (rc == 0);
   */
+  //  When we're done, clean up properly
+  zloop_destroy (&p_hpctf->loop);
+  while (zlist_size (p_hpctf->workers)) {
+      zframe_t *frame = (zframe_t *) zlist_pop (p_hpctf->workers);
+      zframe_destroy (&frame);
+  }
+  zlist_destroy (&p_hpctf->workers);
+
+  zsocket_destroy (p_hpctf->ctx, p_hpctf->backend);
   zsocket_destroy (p_hpctf->ctx, p_hpctf->frontend);
   zsocket_destroy (p_hpctf->ctx, p_hpctf->fldpublisher);
-  zloop_destroy (&p_hpctf->loop);
+
   zhash_destroy (&p_hpctf->kvmap);
   zctx_destroy(&p_hpctf->ctx);
 

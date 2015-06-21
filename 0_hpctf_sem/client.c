@@ -50,6 +50,7 @@ void usage(int argc, char const *argv[])
 
 void handlecommand(game_settings * gs, cmd * cmdptr)
 {
+  cmd_dump(cmdptr);
   if(verifycommand(cmdptr, gs) == TRUE)
   {
     switch(cmdptr->command)
@@ -101,7 +102,7 @@ cmd * sendCmd(game_settings * gs, char * scmd)
   /*int sentbytes = */zmq_send(gs->requester, buffer, 256, 0);
   printf("receive\n");
   int readbytes = zmq_recv(gs->requester, buffer, 256, 0);
-  printf("Received bytes: %d msg %s \n", readbytes, buffer);
+  printf("Received bytes: %d msg '%s' \n", readbytes, buffer);
   if(readbytes > 0)
   {
     cmd * cmdptr = parseandinitcommand(buffer); 

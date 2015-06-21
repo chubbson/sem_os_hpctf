@@ -8,8 +8,7 @@
 
 #include <svlb_helper.h>
 #include <game.h>
-
-
+#include <command.h>
 
 
 //  In the reactor design, each time a message arrives on a socket, the
@@ -19,6 +18,7 @@
 //  Handle input from client, on frontend
 int s_handle_frontend (zloop_t *loop, zmq_pollitem_t *poller, void *arg)
 {
+  printf("s_handl frontend\n");
   hpctf_game * hpctf = (hpctf_game *) arg;
   zmsg_t * msg = zmsg_recv (hpctf->frontend);
   if (msg) {
@@ -37,6 +37,7 @@ int s_handle_frontend (zloop_t *loop, zmq_pollitem_t *poller, void *arg)
 //  Handle input from worker, on backend
 int s_handle_backend (zloop_t * loop, zmq_pollitem_t * poller, void *arg)
 {
+  printf("s_handle_backend\n");
   //  Use worker identity for load-balancing
   hpctf_game * hpctf = (hpctf_game *) arg;
   zmsg_t * msg = zmsg_recv (hpctf->backend);

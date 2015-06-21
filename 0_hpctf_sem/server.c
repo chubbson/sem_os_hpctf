@@ -88,6 +88,7 @@ int handlecommand(char * buf, hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq
     if(hpctfptr->gamestate == FINISHED 
     && cmdptr->command != HELLO)
     { 
+
       if((n = sprintf(buf, 
                       "END %s\n", 
 //                      hpctfptr->winner, 
@@ -96,6 +97,7 @@ int handlecommand(char * buf, hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq
 
 //        zmq_send(hpctfptr->frontend, buf, 256, 0);
         logoff(hpctfptr);
+        return n; 
         //zmq_send(frontend, "START\n",256,0); 
       }
     }
@@ -325,6 +327,81 @@ s_seq_cnt (zloop_t *loop, int timer_id, void *args)
 }
 */
 
+//  Wortker using REQ socket to do load-balancing
+static void * worker_task(void *args)
+{
+  hpctf_game * hpctf = (hpctf_game *) args;
+
+  zctx_t * ctx = zctx_new();
+  void * worker = zsocket_new(ctx, ZMQ_REQ);
+  zsocket_connect (worker, "ipc://backend.ipc");
+
+  //  Tell broker we're ready for work
+  zframe_t *frame = zframe_new (WORKER_READY, 1);
+  puts("sending - WORKER_READY");
+  zframe_send (&frame, worker, 0);
+
+  int64_t sequence = 0; 
+
+  //  Process messages as they arrive
+  while (!zctx_interrupted) {
+    printf("seq: %" PRId64 "\n", sequence++);
+    zmsg_t *msg = zmsg_recv (worker);
+    if (!msg) 
+    {
+      errno = zmq_errno(); 
+      if (errno == EAGAIN) 
+      { continue; } 
+      if (errno == ETERM) 
+      { 
+        printf ("I: Terminated!\n"); 
+        break; 
+      } 
+      printf ("E: (%d) %s\n", errno, strerror(errno)); 
+      break; 
+    }
+
+    frame = zmsg_last (msg);
+//    if(verbose)
+//      zframe_print (frame, "Worker");
+
+    char * sval = zframe_strdup(frame);
+    if(sval)
+    {
+      cmd * cmdptr = parseandinitcommand(sval);
+      char scmd256[256];
+
+      int n = handlecommand(scmd256, hpctf, cmdptr, &sequence);
+      
+      printf("scmd256: '%s'\n", scmd256); 
+      if (n <= 0)
+      {
+        puts("handlecommand failed");
+        zframe_reset(frame, "NACK\n", 5);
+      }
+      else
+      {
+        zframe_reset(frame, scmd256, 256);
+      }
+      free(cmdptr);
+    }
+    else
+    {
+      zframe_reset(frame, "NACK\n", 5);
+    }
+
+//    if(verbose)
+//      zframe_print (zmsg_last (msg), "Worker: Send:");
+
+    zmsg_send (&msg, worker);
+    free(sval);
+  }
+  zctx_destroy (&ctx);
+  return NULL;
+}
+
+
+
 void startzmqserver(hpctf_game * hpctf)
 {
   #ifndef WIN32
@@ -340,7 +417,15 @@ void startzmqserver(hpctf_game * hpctf)
 
   int rc2 = zmq_bind(hpctf->fldpublisher, "tcp://*:5556");
   assert(rc2 == 0);
+
+  zsocket_bind(hpctf->backend, "ipc://backend.ipc");
   zclock_sleep(200);
+
+  printf("%s\n", "before start worker");
+  // start at least one worker - detached autonomous thread
+  zthread_new(worker_task, hpctf);
+  zmq_pollitem_t poller = { hpctf->backend, 0, ZMQ_POLLIN };
+  zloop_poller(hpctf->loop, &poller, s_handle_backend, hpctf);
 
   // Socket to talk to clients
 //  zloop_timer (hpctf->loop, 1000, 0, s_seq_cnt, hpctf);
@@ -349,7 +434,9 @@ void startzmqserver(hpctf_game * hpctf)
   zloop_timer(hpctf->loop, 1000, 0, s_timer_syncplid_event, hpctf);
 
 //  zloop_timer(hpctf->loop, 1000, 1, s_handlerupdgamesettings, hpctf);
-  zthread_fork(hpctf->ctx, updgamesettings_task, hpctf);
+
+
+//  zthread_fork(hpctf->ctx, updgamesettings_task, hpctf);
 
   // run reactor
   zloop_start(hpctf->loop);

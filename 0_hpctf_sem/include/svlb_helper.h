@@ -15,6 +15,6 @@
 #define WORKER_READY   "\001"      //  Signals worker is ready
 
 int s_handle_backend (zloop_t * loop, zmq_pollitem_t * poller, void *arg);
-
+int s_handle_frontend (zloop_t *loop, zmq_pollitem_t *poller, void *arg);
 
 #endif
