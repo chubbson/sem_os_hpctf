@@ -9,8 +9,6 @@
 
 #include <apue.h>
 #include <itskylib.h>
-//#include <field.h>
-//#include <game.h>
 #include <czmq.h>
 #include <assert.h>
 #include <command.h>
@@ -22,12 +20,14 @@
 int updms = 5000;
 int pid = 0; 
 int strat = 0; 
+int verbose = 0; 
 
 void usage(int argc, char const *argv[])
 {
   printf("USAGE:\n\n%s\n", argv[0]);
-  printf("\t-ms=5000\tUpdate in ms, default rand 0-999ms\n");
+  printf("\t-ms=250\tUpdate in ms, default rand 0-999ms\n");
   printf("\t-s=1\tStrategy 1-6 will calc with mod 6\n");
+  printf("\t-v\tverbose\n");
 
   updms=(randof(1000))*1;
   pid = getpid();
@@ -35,6 +35,11 @@ void usage(int argc, char const *argv[])
 
   for (int i = 0; i < argc; ++i)
   {
+    if(strncmp(argv[i], "-v=", 3) == 0)
+    {  
+      verbose = TRUE;
+      continue;
+    }
     if(strncmp(argv[i], "-s=", 3) == 0)
     {  
       sscanf(argv[i], "-s=%d", &strat);
@@ -50,7 +55,8 @@ void usage(int argc, char const *argv[])
 
 void handlecommand(game_settings * gs, cmd * cmdptr)
 {
-  cmd_dump(cmdptr);
+  if(verbose)
+    cmd_dump(cmdptr);
   if(verifycommand(cmdptr, gs) == TRUE)
   {
     switch(cmdptr->command)
@@ -89,9 +95,10 @@ void handlecommand(game_settings * gs, cmd * cmdptr)
   }
   else
   {
+    if(verbose)
+      puts("command validation failed");
     // drop command, validation failed
   }
-  printf("leave handle commad\n");
 }
 
 #define REQUEST_TIMEOUT     1000
@@ -124,24 +131,10 @@ cmd * sendCmd(game_settings * gs, char * scmd)
 { 
   char * buffer = malloc(sizeof(char)*256);//[256];
   snprintf(buffer, 256, "%s", scmd);
-  printf("sending: %s\n", buffer);
-
-
-    
   zmsg_t *request = zmsg_new ();
   zmsg_addstr (request, buffer);
   zmsg_t *reply = NULL;
   cmd * cmdrepl = NULL;
-/*
-    zstr_send(gs->requester, buffer);
-    buffer = zstr_recv(gs->requester);
-
-  if(buffer)
-  {
-    cmdrepl = parseandinitcommand(buffer); 
-    handlecommand(gs, cmdrepl);
-    free(buffer);
-  }*/
 
   for (int retries = 0; retries < MAX_RETRIES; retries++) 
   {
@@ -152,7 +145,8 @@ cmd * sendCmd(game_settings * gs, char * scmd)
     if(reply)
     {
       buffer = zframe_strdup(zmsg_last (reply));
-      printf("buffer: %s\n", buffer);
+      if (verbose)
+        printf("buffer: %s\n", buffer);
       break;
     }
     printf ("W: no response from %s, retrying...\n", gs->endpoint);
@@ -161,40 +155,12 @@ cmd * sendCmd(game_settings * gs, char * scmd)
   {
     cmdrepl = parseandinitcommand(buffer); 
     handlecommand(gs, cmdrepl);
-    free(buffer);
   } 
 
   zmsg_destroy(&request);
   zmsg_destroy(&reply);
-  //free(buffer);
-  //cmd_dump(cmdrepl);
+  free(buffer);
   return cmdrepl;  
-////  printf("response: '%s'",zframe_strdup(zmsg_last (reply)); 
-    
-//  printf("buffer: '%s'\n", buffer);
-//  printf("req\n");
-//  zmsg_dump(reply);
-
-//  printf("after zmsg_dump\n");
-  ///*int sentbytes = */zmq_send(gs->requester, buffer, 256, 0);
-////  zstr_send(gs->requester, buffer);
-////  printf("receive\n");
-
-//  int readbytes = zmq_recv(gs->requester, buffer, 256, 0);
-////  buffer = zstr_recv(gs->requester);
-
-
-//  int readbytes = 5; 
-//  printf("Received bytes: %d msg '%s' \n", readbytes, &buffer[0]);
-/*  if(buffer!=NULL)
-  {
-    cmd * cmdptr = parseandinitcommand(buffer); 
-    handlecommand(gs, cmdptr);
-    free(buffer);
-    return cmdptr;
-  } 
-*/
-
 }
 
 int sendHello(game_settings * gs)
@@ -224,8 +190,6 @@ int sendTake(game_settings * gs, int x, int y, int pid)
 
   if(cmdptr)
     free(cmdptr);
-
-  printf("taken res : %d\n", retres);
   return retres;
 }
 
