@@ -93,7 +93,7 @@ int logon(hpctf_game *hpctf)
     retres += 0x02; // state swiched to running
   } 
 
-  if ((plcnt > 1 && plcnt%20 == 0))
+  if ((plcnt > 1 && plcnt%15 == 0))
   {
     retres += 0x04; // start new worker thread
   }
