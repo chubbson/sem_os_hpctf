@@ -138,9 +138,9 @@ cmd * sendCmd(game_settings * gs, char * scmd)
   zmsg_t *reply = NULL;
   cmd * cmdrepl = NULL;
 
-  for (int retries = 0; retries < MAX_RETRIES && !zsys_interrupted; retries++) 
+  for (int retries = 0; retries < MAX_RETRIES && !zctx_interrupted; retries++) 
   {
-    printf("zctx_interrupted %d, zsys_interrupted %d\n", zctx_interrupted, zsys_interrupted);
+    //printf("zctx_interrupted %d, zsys_interrupted %d\n", zctx_interrupted, zsys_interrupted);
     if (verbose)
       printf("Send: %s\n", buffer);
     //zmsg_send (&request, gs->requester);
@@ -203,7 +203,7 @@ void strategie(game_settings * gs)
   int res = sendHello(gs);
   if(res)
   {
-    while(!zsys_interrupted)
+    while(!zctx_interrupted)
     {
       if(kvmap_getState(gs->kvmap) == 1)
       {
@@ -254,8 +254,9 @@ static void updsubscriber_task(void *args, zctx_t *ctx, void *pipe)
       {
         errno = zmq_errno(); 
         if (errno == EAGAIN) 
-        { printf("I: EAGAIN! continue\n");
-          continue; } 
+        { printf("I: EAGAIN! break\n");
+          zctx_interrupted = 1; 
+          break; } 
         if (errno == ETERM) 
         { printf ("I: Terminated!\n"); 
           zctx_interrupted = 1; 
@@ -273,7 +274,9 @@ static void updsubscriber_task(void *args, zctx_t *ctx, void *pipe)
         kvmsg_store (&kvmsg, kvmap);
       }
       else
+      {
         kvmsg_destroy(&kvmsg);
+      }
   }
 
   zsocket_destroy (ctx, updsub);
