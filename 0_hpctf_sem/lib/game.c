@@ -16,31 +16,6 @@
 #include <kvsimple.h>
 #include <kvmaphelper.h>
 
-//#include "lib/kvsimple.c"
-
-/*
-hpctf_game * inithpctf(int mapsize)
-{
-  hpctf_game * p_hpctf = malloc(sizeof(hpctf_game));
-  p_hpctf->fs = initfield(mapsize);
-  sem_init(&p_hpctf->freeplayerslots, 0, MAXPLAYER); // threadshared, 6 player slots
-  p_hpctf->gamestate = WAITING4PLAYERS;
-  p_hpctf->seq = 0;
-  for (int i = 0; i < MAXPLAYER; ++i)
-    p_hpctf->plidx[i] = NULL;
-
-  p_hpctf->ctx = zctx_new ();
-  assert(p_hpctf->ctx);
-  //zctx_set_linger (p_hpctf->ctx, 5);       //  5 msecs
-  p_hpctf->kvmap = zhash_new ();
-  p_hpctf->responder = zsocket_new (p_hpctf->ctx, ZMQ_REP);
-  p_hpctf->fldpublisher = zsocket_new (p_hpctf->ctx, ZMQ_PUB);
-  p_hpctf->loop = zloop_new ();
-
-  return p_hpctf;
-} 
-*/
-
 hpctf_game * inithpctf(int mapsize)
 {
   hpctf_game * p_hpctf = malloc(sizeof(hpctf_game));
@@ -52,24 +27,9 @@ hpctf_game * inithpctf(int mapsize)
   for (int i = 0; i < MAXPLAYER; ++i)
     p_hpctf->plidx[i] = NULL;
 
-/*
-  p_hpctf->plidx[1] = strdup("asdcf");
-  p_hpctf->plidx[2] = strdup("aswdf");
-  p_hpctf->plidx[3] = strdup("assdf");
-  p_hpctf->plidx[4] = strdup("asgdf");
-  p_hpctf->plidx[5] = strdup("aascsdf");  
-*/
-
   p_hpctf->ctx = zctx_new ();
   p_hpctf->kvmap = zhash_new ();
   p_hpctf->workers = zlist_new ();
-
-////  p_hpctf->frontend = zsocket_new(p_hpctf->ctx, ZMQ_ROUTER);
-////  p_hpctf->backend = zsocket_new(p_hpctf->ctx, ZMQ_ROUTER);
-  //p_hpctf->frontend = zsocket_new (p_hpctf->ctx, ZMQ_REP);
-////  p_hpctf->fldpublisher = zsocket_new (p_hpctf->ctx, ZMQ_PUB);
-//  zsocket_bind (p_hpctf->fldpublisher, "tcp://*:%d", 5556 + 1);
-  //p_hpctf->responder = zsocket_new (p_hpctf->ctx, ZMQ_REP);
 
   p_hpctf->loop = zloop_new ();
   return p_hpctf;
@@ -108,32 +68,6 @@ void freehpctf(hpctf_game * p_hpctf)
   sem_destroy(&p_hpctf->freeplayerslots);
   free(p_hpctf);
 }
-/*
-void freehpctf(hpctf_game * p_hpctf)
-{
-
-  printf("free1\n");
-  zloop_destroy (&p_hpctf->loop);
-
-  zmq_close (p_hpctf->responder);
-  zmq_close (p_hpctf->fldpublisher);
-
-  printf("free2\n");
-  zhash_destroy (&p_hpctf->kvmap);
-  printf("free3\n");
-  zctx_destroy (&p_hpctf->ctx);
-  printf("free4\n");
-
-  for (int i = 0; i < MAXPLAYER; ++i)
-    if (p_hpctf->plidx[i] != NULL)
-      free(p_hpctf->plidx[i]);
-
-  freefield(p_hpctf->fs);
-  sem_destroy(&p_hpctf->freeplayerslots);
-
-  free(p_hpctf);
-}
-*/
 
 int logon(hpctf_game *hpctf) 
 {
@@ -189,8 +123,6 @@ void initplidx(hpctf_game *hpctf)
 {
   for (int i = 0; i < MAXPLAYER; ++i)
   {
-//    if(hpctf->plidx[i] != NULL)
-//      free(hpctf->plidx[i]);
     hpctf->plidx[i] = NULL;
   }
 }
@@ -214,8 +146,6 @@ int playerid(hpctf_game *hpctf, char * player)
 
 int playerid_orig(hpctf_game *hpctf, char * player)
 {
-//  printf("player %s\n", player);
-//§k char * ptmp = strdup(player);
   int plid = kvmap_getPlayerId(hpctf->kvmap, player);
   if (plid == 0)
   {
@@ -254,7 +184,6 @@ int capturetheflag(hpctf_game *hpctf, int x, int y, char * playername)// int pla
 //  if(player < 0 || player >= hpctf->fs->n)
 //    return -3;
 
-//debug  printgamestate(hpctf);
   if(hpctf->gamestate != RUNNING)
     return -4; 
 
@@ -299,5 +228,3 @@ int capturetheflag(hpctf_game *hpctf, int x, int y, char * playername)// int pla
 
   return retres;
 }
-
-// some kick but has no player array ...

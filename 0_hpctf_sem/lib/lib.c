@@ -225,7 +225,7 @@ int is_help_requested(int argc, char *argv[]) {
 // gz d.Hauri 
 // Broken, cuz clock_gettime does not exist, uncommented
 struct timespec get_future(time_t sec, long nsec) {
-  int retcode;
+  int retcode = 0;
 
   struct timespec ts;
   // ToDo: clock_gettime 
@@ -239,7 +239,7 @@ struct timespec get_future(time_t sec, long nsec) {
 }
 
 int is_string_char(char c) {
-  return ('A' <= c && c <= 'Z' || '0' <= c && c <= '9' || 'a' <= c && c <= 'z' || '\240' <= c && c <= '\377');
+  return (('A' <= c && c <= 'Z') || ('0' <= c && c <= '9') || ('a' <= c && c <= 'z') || ('\240' <= c && c <= '\377'));
 }
 
 /* read the contents of a file and convert it to an array of strings containing the readable characters interpreted as 8-bit-charset */

@@ -157,7 +157,6 @@ static void * worker_task(void *args)
 
 int handlecommand(char * buf, hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq)
 {
-//  char buf[256];
   int n = 0;
   game_settings gs = getgamesettings(hpctfptr);
   cmd_dump(cmdptr);
@@ -166,21 +165,16 @@ int handlecommand(char * buf, hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq
   printf("verify command: %d\n", commandsucceed);
   if(commandsucceed == TRUE)
   {
-//debug    printf("%s\n", "handlecommand, verification sucess");
     if(hpctfptr->gamestate == FINISHED 
     && cmdptr->command != HELLO)
     { 
 
       if((n = sprintf(buf, 
                       "END %s\n", 
-//                      hpctfptr->winner, 
                       hpctfptr->winnername)) > 0)
       {
-
-//        zmq_send(hpctfptr->frontend, buf, 256, 0);
         logoff(hpctfptr);
         return n; 
-        //zmq_send(frontend, "START\n",256,0); 
       }
     }
 
@@ -189,16 +183,8 @@ int handlecommand(char * buf, hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq
     int res; 
     switch(cmdptr->command)
     {
-      //case UNKNOWN:
-      //  break;
-//      case SIZE: 
-//        if((n = sprintf(buf, "SIZE %d\n", hpctfptr->fs->n)) > 0)
-//              zmq_send(hpctfptr->frontend, buf, 256, 0);
       case HELLO:
         res = logon(hpctfptr);
-
-//res = logon(hpctfptr);
-        //rintf("%s\n", );
         if(res == 0)
         {
           n = sprintf(buf, "%s", "NACK\n");
@@ -213,7 +199,6 @@ int handlecommand(char * buf, hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq
         {
           //if (verbose)
             puts("starting new worker thread");
-          // start new worker thread
           zthread_new(worker_task, hpctfptr);
         }
         break;
@@ -236,10 +221,6 @@ int handlecommand(char * buf, hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq
         break;
       case STATUS:
         n = sprintf(buf, "%d\n", (hpctfptr->fs->field[cmdptr->y][cmdptr->x]).flag);
-        //if((n = sprintf(buf, "%d\n", (hpctfptr->fs->field[cmdptr->y][cmdptr->x]).flag)) > 0)
-        //{
-        //  zmq_send(hpctfptr->frontend, buf, 256, 0);
-        //}
         break;
       case UNKNOWN:
       default:
@@ -257,104 +238,6 @@ int handlecommand(char * buf, hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq
 
   return n; 
 }
-
-
-static void updgamesettings_task(void *args, zctx_t *ctx, void *pipe)
-{
-  hpctf_game * hpctf = (hpctf_game *)args;
-  //if(!zctx_interrupted)   
-  //  zloop_start (hpctf->loop);
-  int64_t sequence = 0; 
-
-  while(!zctx_interrupted){
-    printf("seq: %" PRId64 "\n", sequence++);
-
-    char buffer[256];
-    int rc = zmq_recv(hpctf->frontend, buffer, 256, 0);
-    if (rc == -1) 
-    {
-      errno = zmq_errno(); 
-      if (errno == EAGAIN) 
-      { continue; } 
-      if (errno == ETERM) 
-      { printf ("I: Terminated!\n"); 
-        break; 
-      } 
-      printf ("E: (%d) %s\n", errno, strerror(errno)); 
-      break; 
-    }
-
-    buffer[rc] = '\0';
-
-    printf("Received bytes: %d msg %s", rc, buffer);
-    cmd * cmdptr = parseandinitcommand(buffer);
-    char scmd256[256];
-    int n = handlecommand(scmd256, hpctf, cmdptr, &sequence);
-    printf("%s\n", "after hanlde command");
-    if (n <= 0)
-    {
-      puts("handlecommand failed");
-    }
-    zmq_send(hpctf->frontend, scmd256,256,0); 
-    free(cmdptr);
-  }
-  if (zctx_interrupted)//s_interrupted == 1)
-  {
-    printf("INTERRUPT RECEIVED, killing server");
-  }
-
-
-  printf("leave task");
-
-}
-
-
-
-//static void updgamesettings_task(void *args, zctx_t *ctx, void *pipe)
-/*
-static int s_handlerupdgamesettings (zloop_t *loop, int timer_id, void *arg)
-{
-  hpctf_game * hpctf = (hpctf_game *)arg;
-  //if(!zctx_interrupted)   
-  //  zloop_start (hpctf->loop);
-  int64_t sequence = 0; 
-
-  while(!zctx_interrupted){
-    printf("seq: %" PRId64 "\n", sequence++);
-
-    char buffer[256];
-    int rc = zmq_recv(hpctf->frontend, buffer, 256, 0);
-    if (rc == -1) 
-    {
-      errno = zmq_errno(); 
-      if (errno == EAGAIN) 
-      { continue; } 
-      if (errno == ETERM) 
-      { printf ("I: Terminated!\n"); 
-        break; 
-      } 
-      printf ("E: (%d) %s\n", errno, strerror(errno)); 
-      break; 
-    }
-
-    buffer[rc] = '\0';
-
-    printf("Received bytes: %d msg %s", rc, buffer);
-    cmd * cmdptr = parseandinitcommand(buffer);
-    handlecommand(hpctf, cmdptr, &sequence);
-    printf("%s\n", "after hanlde command");
-    free(cmdptr);
-  }
-  if (zctx_interrupted)//s_interrupted == 1)
-  {
-    printf("INTERRUPT RECEIVED, killing server");
-  }
-
-  printf("leave task");
-
-  return 0;
-}
-*/
 
 static int s_timer_syncplid_event (zloop_t *loop, int timer_id, void *arg)
 {
@@ -394,21 +277,6 @@ static int s_timer_publishstate_event (zloop_t *loop, int timer_id, void *arg)
   }
   return 0;
 }
-
-/*
-static int
-s_seq_cnt (zloop_t *loop, int timer_id, void *args)
-{
-    printf("%s\n", "in s_seq_cnt");
-    hpctf_game * hpctf = (hpctf_game *) args;
-    printf("chk1\n");
-    hpctf->seq++; 
-
-    printf("chk1\n");
-    printf("sseqcnt %" PRId64 "\n", hpctf->seq);
-    return 0;
-}
-*/
 
 
 static int s_timer_syncfield_event (zloop_t * loop, int timer_id, void *arg)
@@ -476,10 +344,6 @@ void startzmqserver(hpctf_game * hpctf)
   zloop_timer(hpctf->loop, 1000, 0, s_timer_publishstate_event, hpctf);
   zloop_timer(hpctf->loop, 1000, 0, s_timer_syncplid_event, hpctf);
   zloop_timer(hpctf->loop, 1000, 0, s_timer_syncfield_event, hpctf);
-//  zloop_timer(hpctf->loop, 1000, 1, s_handlerupdgamesettings, hpctf);
-
-
-//  zthread_fork(hpctf->ctx, updgamesettings_task, hpctf);
 
   // run reactor
   zloop_start(hpctf->loop);
@@ -490,47 +354,14 @@ void startzmqserver(hpctf_game * hpctf)
 }
 
 
-
-struct thread_info {    /* Used as argument to thread_start() */
-  pthread_t thread_id;        /* ID returned by pthread_create() */
-  int       thread_num;       /* Application-defined thread # */
-  hpctf_game* hpctf;
-}; //counterstruct shared;
-
-/*
-void * threadwork_zmqserver(void *args)
-{
-  struct thread_info *tinfo = args;
-  
-  startzmqserver(tinfo->hpctf);
-
-  return NULL;
-}
-*/
-
-/*
-void * threadwork_printfld(void *args)
-{
-  struct thread_info *tinfo = args;
-  
-  while(1)
-  {
-    printfield(tinfo->hpctf->fs);
-    printplayer(tinfo->hpctf);
-    usleep(1*1000*100);
-  }
-
-  return NULL;
-}
-*/
-
 int main(int argc, char const *argv[])
 {
-  for (int i = -1; i < 1878; ++i)//1787; ++i)
+  for (int i = -1; i < MAXPLAYER; ++i)//1787; ++i)
   {
     printcolor(i);
   }
-  puts("");
+  printcolor(0);
+  printf("\n");
 
   usage(argc, argv);
   
@@ -539,88 +370,9 @@ int main(int argc, char const *argv[])
   hpctf->verbose = verbose; 
   startzmqserver(hpctf);
 
-//  printf("%s\n", "before free");
-//  sleep(2);
   freehpctf(hpctf);
 
-  printf("%s\n", "222222s");
-
-
-    //logon(p_hpctf); // 5
-  //logon(p_hpctf); // 4
-  //logon(p_hpctf); // 3
-  //logon(p_hpctf); // 2
-  //logon(p_hpctf); // 1
-/*
-  struct thread_info *tinfo;
-  tinfo = calloc(2, sizeof(struct thread_info));
-  if (tinfo == NULL)
-    err_sys("calloc");
-*/
-  /*
-
-  int ptcres =0;
-  void * res;
-  for(int i = 0; i < 2; i++)
-  {
-    tinfo[i].thread_num = i; 
-    tinfo[i].hpctf = p_hpctf;
-
-
-    switch(i)
-    {
-      case 0: 
-        ptcres = pthread_create(&tinfo[i].thread_id, NULL, &threadwork_zmqserver, &tinfo[i]);
-        break;
-      case 1: 
-        ptcres = pthread_create(&tinfo[i].thread_id, NULL, &threadwork_printfld, &tinfo[i]);
-        break;
-    }
-    // the pthread_create() call stores the thread id into corresponding element 
-    // of tinfo[]
-    //if (ptcres != 0)
-    //  handle_error_en(ptcres, "pthread_create");
-
-    printf("thread created: %d; \n",
-        tinfo[i].thread_num);
-  } 
-
-  */
-
-  /*
-  // join with each thread, and display its returned value 
-  for (int i = 0; i < 2; i++) {
-    ptcres = pthread_join(tinfo[i].thread_id, &res);
-    //if (ptcres != 0)
-    //    handle_error_en(ptcres, "pthread_join");
-
-    printf("Joined with thread %d; \n",
-            tinfo[i].thread_num);
-    //free(res);      //Free memory allocated by thread 
-  }
-
-  free(tinfo);
-  */
-  /*
-//  someclients(p_hpctf->fs);
-  game_settings gs;
-  //MAXPLAYER || 6
-  //if(MAXPLAYER - logon(p_hpctf) >= 2)
-  logon(p_hpctf); // 5
-  logon(p_hpctf); // 4
-  logon(p_hpctf); // 3
-  gs = getgamesettings(p_hpctf); 
-  printgamesettings(&gs);
-  logon(p_hpctf); // 2
-  gs = getgamesettings(p_hpctf); 
-  printgamesettings(&gs);
-  logon(p_hpctf); // 1
-  logon(p_hpctf); // 0
-//  logon(p_hpctf); // 0
-
-  capturetheflag(p_hpctf, 4,2,3);
-  */
-
+  printf("%s\n", "Server shut down");
   exit(0);
 }
 
