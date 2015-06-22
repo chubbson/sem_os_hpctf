@@ -162,7 +162,8 @@ int handlecommand(char * buf, hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq
 {
   int n = 0;
   game_settings gs = getgamesettings(hpctfptr);
-  cmd_dump(cmdptr);
+  if(hpctfptr->verbose)
+    cmd_dump(cmdptr);
 
   int commandsucceed = verifycommand(cmdptr, &gs);
   if(commandsucceed == TRUE)
@@ -170,7 +171,6 @@ int handlecommand(char * buf, hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq
     if(hpctfptr->gamestate == FINISHED 
     && cmdptr->command != HELLO)
     { 
-
       if((n = sprintf(buf, 
                       "END %s\n", 
                       hpctfptr->winnername)) > 0)
@@ -214,6 +214,14 @@ int handlecommand(char * buf, hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq
           n = res 
               ? sprintf(buf, "%s", "TAKEN\n")
               : sprintf(buf, "%s", "INUSE\n");
+        }
+        else if (res == -4) // game is not running
+        {
+          if((n = sprintf(buf, 
+                          "END %s\n", 
+                          hpctfptr->winnername)) > 0)
+            logoff(hpctfptr);
+    // dis
         }
         else
         {
