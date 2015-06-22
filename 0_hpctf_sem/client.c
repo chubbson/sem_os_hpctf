@@ -109,7 +109,6 @@ void cli_handlecommand(game_settings * gs, cmd * cmdptr)
 static zmsg_t * 
 s_try_request(zctx_t *ctx, char * endpoint, zmsg_t *request)
 {
-
 //  void * requester = zmq_socket(ctx, ZMQ_REQ);
 //  zmq_connect(requester, "tcp://localhost:5555");
   void * client = zsocket_new(ctx, ZMQ_REQ);
@@ -141,8 +140,7 @@ cmd * sendCmd(game_settings * gs, char * scmd)
   for (int retries = 0; retries < MAX_RETRIES && !zctx_interrupted; retries++) 
   {
     //printf("zctx_interrupted %d, zsys_interrupted %d\n", zctx_interrupted, zsys_interrupted);
-    if (verbose)
-      printf("Send: %s\n", buffer);
+    printf("Send: %s", buffer);
     //zmsg_send (&request, gs->requester);
     //reply = zmsg_recv(gs->requester);
     reply  = s_try_request (gs->ctx, gs->endpoint, request);
@@ -150,6 +148,7 @@ cmd * sendCmd(game_settings * gs, char * scmd)
     if(reply)
     {
       buffer = zframe_strdup(zmsg_last (reply));
+      printf("Recv: %s", buffer);
       break;
     }
     printf ("W: no response from %s, retrying...\n", gs->endpoint);
