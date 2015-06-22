@@ -141,7 +141,9 @@ static void * worker_task(void *args)
         int n = handlecommand(scmd256, hpctf, cmdptr, &sequence);
         zframe_reset(frame,  scmd256, n);
         zmsg_dump(msg);
-        int rc = zmsg_send (&msg, worker);        
+        int rc = zmsg_send (&msg, worker);  
+        if(rc != 0)
+          break;    
 
         free(cmdptr);
         free(sval);
