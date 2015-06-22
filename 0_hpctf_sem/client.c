@@ -68,7 +68,7 @@ void cli_handlecommand(game_settings * gs, cmd * cmdptr)
         gs->fieldsize = cmdptr->n; 
         break;
       case NACK:
-        printf("%s\n", "NACK");
+        //printf("%s\n", "NACK");
         //exit(0);
         // client logon failed
         break;
@@ -254,9 +254,9 @@ static void updsubscriber_task(void *args, zctx_t *ctx, void *pipe)
       {
         errno = zmq_errno(); 
         if (errno == EAGAIN) 
-        { printf("I: EAGAIN! break\n");
-          zctx_interrupted = 1; 
-          break; } 
+        { printf("I: EAGAIN! continue\n");
+          //zctx_interrupted = 1; 
+          continue; } 
         if (errno == ETERM) 
         { printf ("I: Terminated!\n"); 
           zctx_interrupted = 1; 

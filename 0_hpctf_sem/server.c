@@ -75,6 +75,23 @@ void usage(int argc, char const *argv[])
 
 } 
 
+
+void * msgframes_dump(zmsg_t * msg)
+{
+  zframe_t * frame = zmsg_first(msg);
+  int i= 0; 
+  while(frame)
+  {
+    char * frmctx = zframe_strdup(frame);
+
+    printf("[%d] '%s'\n", i++, frmctx);
+    free(frmctx);
+    frame = zmsg_next(msg);
+  }
+  return NULL;
+
+}
+
 //  Wortker using REQ socket to do load-balancing
 static void * worker_task(void *args)
 {
@@ -90,7 +107,6 @@ static void * worker_task(void *args)
   zframe_send (&frame, worker, 0);
 
   int64_t sequence = 0; 
-
 
   //  Process messages as they arrive
   while (!zctx_interrupted) {
@@ -113,40 +129,25 @@ static void * worker_task(void *args)
       break; 
     }
 
+    zmsg_dump(msg);
     frame = zmsg_last (msg);
-//    if(verbose)
-//      zframe_print (frame, "Worker");
-
-    char * sval = zframe_strdup(frame);
-    if(sval)
+    if(frame)
     {
-      cmd * cmdptr = parseandinitcommand(sval);
-      char scmd256[256];
-
-      int n = handlecommand(scmd256, hpctf, cmdptr, &sequence);
-      
-      printf("scmd256: '%s'\n", scmd256); 
-      if (n <= 0)
+      char * sval = zframe_strdup(frame);
+      if (sval)
       {
-        zframe_reset(frame, "NACK\n", 5);
-      }
-      else
-      {
-        zframe_reset(frame, scmd256, 256);
-      }
-      free(cmdptr);
-    }
-    else
-    {
-      zframe_reset(frame, "NACK\n", 5);
-    }
+        cmd * cmdptr = parseandinitcommand(sval);
+        char scmd256[256];
+        int n = handlecommand(scmd256, hpctf, cmdptr, &sequence);
+        zframe_reset(frame,  scmd256, n);
+        zmsg_dump(msg);
+        int rc = zmsg_send (&msg, worker);        
 
-//    if(verbose)
-//      zframe_print (zmsg_last (msg), "Worker: Send:");
-
-    printf("s_interrupted %d\n",s_interrupted );
-    zmsg_send (&msg, worker);
-    free(sval);
+        free(cmdptr);
+        free(sval);
+      }
+    }
+    zmsg_destroy(&msg);
   }
 
   puts("zctx_interrupted %d\n");
@@ -162,7 +163,6 @@ int handlecommand(char * buf, hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq
   cmd_dump(cmdptr);
 
   int commandsucceed = verifycommand(cmdptr, &gs);
-  printf("verify command: %d\n", commandsucceed);
   if(commandsucceed == TRUE)
   {
     if(hpctfptr->gamestate == FINISHED 
@@ -217,6 +217,7 @@ int handlecommand(char * buf, hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq
         {
           // Disconnect, unknown player, slots full
           n = sprintf(buf, "NACK\n");
+          logoff(hpctfptr);
         }
         break;
       case STATUS:
@@ -233,20 +234,24 @@ int handlecommand(char * buf, hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq
   {
     printf("%s\n", "handlecommand, verification failed -> sending NACK");
     // Disconnect, unknown player, slots full
-    n = sprintf(buf, "%s", "NACK\n");
+    
   } 
 
+  n = n == 0 
+        ? sprintf(buf, "%s", "NACK\n")
+        : n;
   return n; 
 }
 
 static int s_timer_syncplid_event (zloop_t *loop, int timer_id, void *arg)
-{
-  puts("s_timer_syncplid_event");
+{ 
   //sync players
   bool fldbool[MAXPLAYER] = {FALSE};
   hpctf_game * hpctf = (hpctf_game *)arg;
   if(hpctf && !zctx_interrupted)
   {
+    if(hpctf->verbose)
+      puts("s_timer_syncplid_event");
     for (int x = 0; x < hpctf->fs->n; x++)
       for (int y = 0; y < hpctf->fs->n; y++)
       {
@@ -266,10 +271,11 @@ static int s_timer_syncplid_event (zloop_t *loop, int timer_id, void *arg)
 
 static int s_timer_publishstate_event (zloop_t *loop, int timer_id, void *arg)
 {
-  puts("s_timer_publishstate_event");
   hpctf_game * hpctf = (hpctf_game *)arg;
   if(hpctf && !zctx_interrupted)
   {
+    if(hpctf->verbose)
+      puts("s_timer_publishstate_event");
     kvmap_setState(hpctf->kvmap, hpctf->seq++, hpctf->fldpublisher, hpctf->gamestate);
     kvmap_setSize(hpctf->kvmap, hpctf->seq++, hpctf->fldpublisher, hpctf->fs->n);
     if(hpctf->verbose)
@@ -281,14 +287,16 @@ static int s_timer_publishstate_event (zloop_t *loop, int timer_id, void *arg)
 
 static int s_timer_syncfield_event (zloop_t * loop, int timer_id, void *arg)
 {
-  puts("s_timer_syncfield_event");
   //sync players
   hpctf_game * hpctf = (hpctf_game*)arg;
 
   if(hpctf)
   {
     if(hpctf->verbose)
+    {
+      puts("s_timer_syncfield_event");
       printf("n: %d\n",hpctf->fs->n);
+    }
     for (int x = 0; x < hpctf->fs->n; x++)//n; x++)
       for (int y = 0; y < hpctf->fs->n; y++)//n; y++)
       {

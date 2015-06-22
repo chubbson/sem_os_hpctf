@@ -81,7 +81,7 @@ int logon(hpctf_game *hpctf)
   int val;
   int res = sem_getvalue(&hpctf->freeplayerslots, &val);
   int plcnt = MAXPLAYER - val;
-  printf("sem val: %d | %d | %d\n", val, res, plcnt);
+  printf("Players left: %d hello received %d\n", val, plcnt);
 
 
   retres += 0x01; // player logged in 
@@ -93,7 +93,7 @@ int logon(hpctf_game *hpctf)
     retres += 0x02; // state swiched to running
   } 
 
-  if ((plcnt > 1 && plcnt%15 == 0))
+  if ((plcnt > 1 && plcnt%100 == 0))
   {
     retres += 0x04; // start new worker thread
   }
@@ -176,7 +176,6 @@ int playerid_orig(hpctf_game *hpctf, char * player)
 
 int capturetheflag(hpctf_game *hpctf, int x, int y, char * playername)// int player/*, char * playername*/)
 {
-  printf("%s x:%d y:%d n:%d gs:%d \n", "enter ctf", x, y, hpctf->fs->n, hpctf->gamestate);
   if(y < 0 || y >= hpctf->fs->n)
     return -1;
   if(x < 0 || x >= hpctf->fs->n)
