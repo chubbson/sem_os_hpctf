@@ -313,7 +313,7 @@ int startzmqclient()
 
   printf("%s\n", "exit client");
 
-
+  zctx_interrupted = 1; 
   zhash_destroy (&gs->kvmap);
 // zmq_close(requester);
   zctx_destroy(&context);
