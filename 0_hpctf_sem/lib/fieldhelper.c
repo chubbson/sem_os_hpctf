@@ -7,7 +7,6 @@
 
 #include <fieldhelper.h>
 #include <somecolor.h>
-//#include <kvmaphelper.h> 
 
 
 void * printplayer(zhash_t * kvmap, fldstruct * fs)
@@ -110,9 +109,7 @@ void printfield(fldstruct *fs)
     int res2 = strlen(prntfld);
     prntfld[res2] = '\0';
 
-    printf("%s", prntfld);//%d\n%d\n", prntfld, res2, res);
-    //write(STDOUT_FILENO, prntfld, res2);
-    //fflush(STDOUT_FILENO);
+    printf("%s", prntfld);
     free(prntfld);
   }
   else

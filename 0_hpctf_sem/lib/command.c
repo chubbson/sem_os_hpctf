@@ -29,12 +29,7 @@ void cmd_dump(cmd * cmdptr)
       fprintf(stderr, "[y:%d]", cmdptr->y);
       fprintf(stderr, "[playername:%s]", cmdptr->playername);
 
-/*
-      fprintf (stderr, "[size:%zd] ", size);
-      int char_nbr;
-      for (char_nbr = 0; char_nbr < size; char_nbr++)
-          fprintf (stderr, "%02X", body [char_nbr]);
-*/
+
       fprintf (stderr, "\n");
   }
   else
@@ -142,14 +137,7 @@ cmd * initcommand(int argc, char *argv[])
                               ? strdup(tmppn)
                               : argv[2]
                           : argv[1];
-    
-
-   // cmdptr->playername = argv[1]; // atoi(argv[1]);
   }
-///  else if((cmdptr->player = atoi(argv[0])) > 0)
-///  {
-///    cmdptr->command = PLAYER;
-///  }
   else 
   {
     cmdptr->command = UNKNOWN; 

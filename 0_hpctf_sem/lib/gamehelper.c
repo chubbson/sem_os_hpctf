@@ -37,7 +37,6 @@ game_settings getgamesettings(hpctf_game *hpctf)
   gs.emptyslots = val; 
   gs.fieldsize = hpctf->fs->n;
 
-//debug  printf("sem val res cnt: %d | %d | %d\n", val, res, cnt);
   return gs;
 }
 
@@ -54,18 +53,3 @@ void printgamesettings(game_settings *gs)
 {
   printf("MAXPLAYER: %d emptyslots: %d fullslots: %d fieldsize %d\n", MAXPLAYER, gs->emptyslots, gs->fullslots, gs->fieldsize);
 }
-
-/*
-void printplayer(hpctf_game *hpctf)
-{
-  for (int i = 0; i < MAXPLAYER; ++i)
-  {
-    if(hpctf->plidx[i] == NULL)
-      return;
-    char fld[MAXLINE]; 
-    fld[0] = '\0';
-    sprintcolfield(i+1, fld);
-    printf("%s = %s\n", fld, hpctf->plidx[i]);
-  }
-}
-*/

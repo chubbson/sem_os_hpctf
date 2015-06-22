@@ -180,8 +180,6 @@ int capturetheflag(hpctf_game *hpctf, int x, int y, char * playername)// int pla
     return -1;
   if(x < 0 || x >= hpctf->fs->n)
     return -2;
-//  if(player < 0 || player >= hpctf->fs->n)
-//    return -3;
 
   if(hpctf->gamestate != RUNNING)
     return -4; 
