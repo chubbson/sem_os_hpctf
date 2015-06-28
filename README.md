@@ -33,10 +33,10 @@
 * **(Done)** Angabe git repositories                   2015-03-15-2359 CET
 * **(Done)** Via Mail inklusive ZHAW Kürzel
 * **(Done)** EBS-Eintrag                               2015-03-20-2359 CET
-* **(Done)* 1. Zwischenstandsbericht                  2015-04-01-2359 KST
-* 2. Zwischenstandsbericht                  2015-05-01-2359 CEST
-* Abgabe Arbeiten:                          2015-06-21-2359 CEST
-* Präsentation  ZL O4.10                    2015-07-01-1700 CEST
+* **(Done)** 1. Zwischenstandsbericht                  2015-04-01-2359 KST
+* **(Done)** 2. Zwischenstandsbericht                  2015-05-01-2359 CEST
+* **(Done)** Abgabe Arbeiten:                          2015-06-21-2359 CEST
+* *(Prepared)* Präsentation  ZL O4.10                    2015-07-01-1700 CEST
 * ~~(nur Dozent) Noteneingabe~~                KW 30
 * ~~(nur Dozent) Späteste Abgabe Notenblat~~    2015-07-26
 
