@@ -31,15 +31,13 @@ int scatcolor(int idx, char *str)
       break;
     case 7 ... 1878:
       idx -= coldigcnt;
-      letidx = (idx-1) % lettercnt ;
-  //    letidx = (idx-1) / fldcolcnt;
+      idx -= 1;
+      letidx = idx % lettercnt;
       letidx += letidx >= alphcnt ? 6 : 0;
       letidx += shftidx;
+      digfg = (idx/lettercnt)%coldigcnt + 1;
+      digbg = (idx - ( idx/(lettercnt*coldigcnt) ) )%coldigcnt + 1;
 
-
-      digfg = ((idx-1) / lettercnt)%coldigcnt + 1;
-  //    digfg = ((idx-1)%fldcolcnt)/coldigcnt + 1;// 
-      digbg = ((idx-1) % fldcolcnt)%coldigcnt + 1;
       n = sprintf(buf, "\x1B[%d;3%d;4%dm%c\x1B[0m", 1, digfg, digbg, (char)letidx);
       break;
     default:
