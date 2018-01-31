@@ -85,7 +85,7 @@ static void updsubscriber_task(void *args, zctx_t *ctx, void *pipe)
   }
 
   zsocket_destroy (ctx, updsub);
-  zsys_interrupted = 1; 
+  zctx_interrupted = 1; 
 
   char buf[100];
   snprintf(buf, 100, "updsubscriber_task, Interrupted\n%" PRId64 "messages in\n", sequence);
