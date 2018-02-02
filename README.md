@@ -2,11 +2,11 @@
 
 ## Notes
 
-###Install zmq 
+### Install zmq 
 * read INSTALLZMQ.md ;)
 * if its useful mark it, http://stackoverflow.com/questions/29573714/another-zmq-installation-guide-using-fedora-running-zguide-c-examples/29573715#29573715
 
-###Makefile
+### Makefile
 
 * cd 0_hpctf_sem
 * ../scripts/create-make > makefile
@@ -17,6 +17,21 @@
 ### TASKS
 * ps aux
 * kill <pid>
+ 
+### Helpfull Terminal Commands 
+* Kill - send a signal to a process
+`kill [options] <pid> [...]`
+  * SIGHUP Hangup detected on controlling terminal or death of controlling process. Use SIGHUP to reload configuration files and open/close log files
+
+  * SIGKILL Kill signal. Use SIGKILL as a last resort to kill process. This will not save data or cleaning kill the process.
+  * SIGTERM Termination signal. This is the default and safest way to kill process. 
+  
+  `kill SIGTERM 12345`
+* grep processe using a specific port. [From Here](https://unix.stackexchange.com/questions/106561/finding-the-pid-of-the-process-using-a-specific-port)
+
+   `sudo ss -lptn 'sport = :80'`
+   or `lsof -i :80'`
+
 
 ### Links
 * https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet
