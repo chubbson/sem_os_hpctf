@@ -225,11 +225,9 @@ int is_help_requested(int argc, char *argv[]) {
 // gz d.Hauri 
 // Broken, cuz clock_gettime does not exist, uncommented
 struct timespec get_future(time_t sec, long nsec) {
-  int retcode = 0;
-
   struct timespec ts;
   // ToDo: clock_gettime 
-  //retcode = clock_gettime(CLOCK_REALTIME, &ts);
+  int retcode = clock_gettime(CLOCK_REALTIME, &ts);
   handle_error(retcode, "clock_gettime", PROCESS_EXIT);
   // printf("timout(%ld sec %ld nsec)\n", (long) ts.tv_sec, (long) ts.tv_nsec);
   ts.tv_sec  += sec;
