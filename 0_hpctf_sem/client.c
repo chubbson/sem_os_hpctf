@@ -107,12 +107,14 @@ void cli_handlecommand(game_settings * gs, cmd * cmdptr)
 #define MAX_RETRIES         3       //  Before we abandon
 
 static zmsg_t * 
-s_try_request(zctx_t *ctx, char * endpoint, zmsg_t *request)
+s_try_request(char * endpoint, zmsg_t *request)
 {
 //  void * requester = zmq_socket(ctx, ZMQ_REQ);
 //  zmq_connect(requester, "tcp://localhost:5555");
-  void * client = zsocket_new(ctx, ZMQ_REQ);
-  zsocket_connect(client, endpoint);
+    zsock_t *client = zsock_new (ZMQ_REQ);
+    assert (client);
+    int rc = zsock_connect (client, endpoint);
+    assert (rc == 0);
 
   //printf("%s\n", zstr_recv(client)); 
     zmsg_t *msg = zmsg_dup (request);
@@ -123,7 +125,7 @@ s_try_request(zctx_t *ctx, char * endpoint, zmsg_t *request)
     if (items [0].revents & ZMQ_POLLIN)
       reply = zmsg_recv (client);
     //  Close socket in any case, we're done with it now
-    zsocket_destroy (ctx, client);
+    zsock_destroy (&client);
     return reply;
 }
 
@@ -137,13 +139,13 @@ cmd * sendCmd(game_settings * gs, char * scmd)
   zmsg_t *reply = NULL;
   cmd * cmdrepl = NULL;
 
-  for (int retries = 0; retries < MAX_RETRIES && !zctx_interrupted; retries++) 
+  for (int retries = 0; retries < MAX_RETRIES && !zsys_interrupted; retries++) 
   {
     //printf("zctx_interrupted %d, zsys_interrupted %d\n", zctx_interrupted, zsys_interrupted);
     printf("Send: %s", buffer);
     //zmsg_send (&request, gs->requester);
     //reply = zmsg_recv(gs->requester);
-    reply  = s_try_request (gs->ctx, gs->endpoint, request);
+    reply  = s_try_request (gs->endpoint, request);
     
     if(reply)
     {
@@ -202,7 +204,7 @@ void strategie(game_settings * gs)
   int res = sendHello(gs);
   if(res)
   {
-    while(!zctx_interrupted)
+    while(!zsys_interrupted)
     {
       if(kvmap_getState(gs->kvmap) == 1)
       {
@@ -236,29 +238,28 @@ void strategie(game_settings * gs)
   }
 }
 
-static void updsubscriber_task(void *args, zctx_t *ctx, void *pipe)
+static void updsubscriber_actor(zsock_t *pipe, void *args)
 {
   zhash_t * kvmap = (zhash_t *)args;
-
-  void * updsub = zsocket_new (ctx, ZMQ_SUB);
-  zsocket_set_subscribe (updsub, "");
-  zsocket_connect (updsub, "tcp://localhost:5556");
+  zsock_t *updsub = zsock_new_sub("tcp://localhost:5556", "");
 
   int64_t sequence = 0;
 
-  while (!zctx_interrupted) {
+  while (!zsys_interrupted) {
       sequence++;
       kvmsg_t *kvmsg = kvmsg_recv (updsub);
       if (!kvmsg)
       {
         errno = zmq_errno(); 
         if (errno == EAGAIN) 
-        { printf("I: EAGAIN! continue\n");
+        { 
+          printf("I: EAGAIN! continue\n");
           //zctx_interrupted = 1; 
-          continue; } 
+          continue; 
+        } 
         if (errno == ETERM) 
         { printf ("I: Terminated!\n"); 
-          zctx_interrupted = 1; 
+          zsys_interrupted = 1; 
           break; 
         } 
         printf ("E: (%d) %s\n", errno, strerror(errno)); 
@@ -278,8 +279,7 @@ static void updsubscriber_task(void *args, zctx_t *ctx, void *pipe)
       }
   }
 
-  zsocket_destroy (ctx, updsub);
-  //zsys_interrupted = 1; 
+  zsock_destroy (&updsub);
 
   char buf[100];
   snprintf(buf, 100, "updsubscriber_task, Interrupted\n%" PRId64 "messages in\n", sequence);
@@ -293,30 +293,23 @@ int startzmqclient()
 
   // Socket to talk to clients
   printf("%s\n", "Connecting to hello world server ....");
-  zctx_t * context = zctx_new();// zmq_ctx_new();
-
-//  void * context = zmq_ctx_new();
-//  void * requester = zmq_socket(context, ZMQ_REQ);
-//  zmq_connect(requester, "tcp://localhost:5555");
 
   zhash_t *kvmap = zhash_new ();
   game_settings * gs = malloc(sizeof(game_settings));
-//  gs->requester = requester;
   gs->endpoint = "tcp://localhost:5555";
   gs->updms = updms;
-  gs->ctx = context; 
   gs->kvmap = kvmap;
 
-  zthread_fork(context, updsubscriber_task, kvmap);
+  zactor_t *actor = zactor_new(updsubscriber_actor, kvmap);
+  assert (actor);
+
   strategie(gs);
 
   printf("%s\n", "exit client");
 
-  zctx_interrupted = 1; 
+  zsys_interrupted = 1; 
   zhash_destroy (&gs->kvmap);
-// zmq_close(requester);
-  zctx_destroy(&context);
-//  zmq_ctx_destroy(context);
+  zactor_destroy(&actor);
 
   free(gs);
 
@@ -330,7 +323,7 @@ int main(int argc, char const *argv[])
 
   printf("%s\n", "starting zmqclient");
   int res = startzmqclient();
-
+  
   exit(res);
 }
 

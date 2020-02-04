@@ -54,7 +54,10 @@ void handle_error_myerrno_internal(long return_code, int myerrno, const char *ms
     } else {
       extra_msg[0] = '\000';
     }
-    sprintf(error_msg, "%sreturn_code=%ld\nerrno=%d\nmessage=%s\n", extra_msg, return_code, myerrno, error_str);
+    sprintf(error_msg, "%s", extra_msg);
+    sprintf(error_msg, "return_code=%ld\n", return_code);
+    sprintf(error_msg, "errno=%d\n", myerrno);
+    sprintf(error_msg, "message=%s\n", error_str);
     switch (lt) {
     case LT_SYSLOG:
       syslog(LOG_ERR, error_msg);

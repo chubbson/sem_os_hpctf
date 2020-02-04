@@ -19,8 +19,13 @@
 
 #include <kvsimple.h>
 #include <kvmaphelper.h>
+
+#include <pthread.h>
  
 #include <svlb_helper.h>
+
+
+#define MAXNUM_WORKERTHREADS 1
 
 static int s_interrupted = 0; 
  
@@ -92,14 +97,20 @@ void * msgframes_dump(zmsg_t * msg)
 
 }
 
-//  Wortker using REQ socket to do load-balancing
+//  Worker using REQ socket to do load-balancing
 static void * worker_task(void *args)
+//static void * worker_task(void *args)
 {
   hpctf_game * hpctf = (hpctf_game *) args;
+//  long tid;
+//  tid = (long)threadid;
+  printf("Hello World! It's me, Workerthread #%ld!\n", hpctf->seq);
 
-  zctx_t * ctx = zctx_new();
-  void * worker = zsocket_new(ctx, ZMQ_REQ);
-  zsocket_connect (worker, "ipc://backend.ipc");
+  zsock_t *worker = zsock_new (ZMQ_REQ);
+  assert (worker);
+
+  int rc = zsock_connect (worker, "ipc://backend.ipc");
+  assert (rc == 0);; 
 
   //  Tell broker we're ready for work
   zframe_t *frame = zframe_new (WORKER_READY, 1);
@@ -109,9 +120,12 @@ static void * worker_task(void *args)
   int64_t sequence = 0; 
 
   //  Process messages as they arrive
-  while (!zctx_interrupted) {
+  while (!zsys_interrupted) {
     printf("seq: %" PRId64 "\n", sequence++);
+    
+    // ## THIS RECEIVE BREAKS EVERYTHING
     zmsg_t *msg = zmsg_recv (worker);
+    assert(msg);
     if (!msg) 
     {
       errno = zmq_errno(); 
@@ -130,6 +144,7 @@ static void * worker_task(void *args)
     }
 
     zmsg_dump(msg);
+/*  ################# UNCOMMENT THIS AGAIN
     frame = zmsg_last (msg);
     if(frame)
     {
@@ -149,12 +164,19 @@ static void * worker_task(void *args)
         free(sval);
       }
     }
+    */
     zmsg_destroy(&msg);
+    printf("zsys_interrupted %d\n", zsys_interrupted);
   }
 
-  puts("zctx_interrupted %d\n");
-  zctx_destroy (&ctx);
-  return NULL;
+  // doesnt make any sense
+  printf("zsys_interrupted %d\n", zsys_interrupted);
+  printf("zctx_interrupted %d\n", zctx_interrupted);
+  
+  zsock_destroy(&worker);
+
+  pthread_exit(NULL);
+//  return NULL;
 }
 
 
@@ -200,8 +222,13 @@ int handlecommand(char * buf, hpctf_game * hpctfptr, cmd * cmdptr, int64_t * seq
         if(res & 0x04)
         {
           //if (verbose)
-            puts("starting new worker thread");
-          zthread_new(worker_task, hpctfptr);
+/*  ##### PRBBLY USE ACTOR AGAIN        
+          puts("starting new worker thread");
+          //zthread_new(worker_task, hpctfptr);
+          // !!!!!! fix this
+          pthread_t initWorkerThread;
+          assert(pthread_create(&initWorkerThread, NULL, worker_task, hpctfptr));
+*/
         }
         break;
       case TAKE:
@@ -258,7 +285,7 @@ static int s_timer_syncplid_event (zloop_t *loop, int timer_id, void *arg)
   //sync players
   bool fldbool[MAXPLAYER] = {FALSE};
   hpctf_game * hpctf = (hpctf_game *)arg;
-  if(hpctf && !zctx_interrupted)
+  if(hpctf && !zsys_interrupted)
   {
     if(hpctf->verbose)
       puts("s_timer_syncplid_event");
@@ -282,7 +309,7 @@ static int s_timer_syncplid_event (zloop_t *loop, int timer_id, void *arg)
 static int s_timer_publishstate_event (zloop_t *loop, int timer_id, void *arg)
 {
   hpctf_game * hpctf = (hpctf_game *)arg;
-  if(hpctf && !zctx_interrupted)
+  if(hpctf && !zsys_interrupted)
   {
     if(hpctf->verbose)
       puts("s_timer_publishstate_event");
@@ -338,23 +365,42 @@ void startzmqserver(hpctf_game * hpctf)
     signal (SIGTERM, s_signal_handler);
   #endif
 
-  hpctf->frontend = zsocket_new(hpctf->ctx, ZMQ_ROUTER);
-  hpctf->backend = zsocket_new(hpctf->ctx, ZMQ_ROUTER);
-  hpctf->fldpublisher = zsocket_new (hpctf->ctx, ZMQ_PUB);
-  int rc1 = zmq_bind(hpctf->frontend, "tcp://*:5555");
-  assert(rc1 == 0);
-
-  int rc2 = zmq_bind(hpctf->fldpublisher, "tcp://*:5556");
-  assert(rc2 == 0);
-
-  zsocket_bind(hpctf->backend, "ipc://backend.ipc");
+  hpctf->frontend = zsock_new_router("tcp://*:5555");
+  hpctf->backend = zsock_new_router("ipc://backend.ipc");
+  hpctf->fldpublisher = zsock_new_pub("tcp://*:5556");
   zclock_sleep(200);
 
   printf("%s\n", "before start worker");
+
+
+  pthread_t workerThreads[MAXNUM_WORKERTHREADS];
+  int rc;
+  long t;
+  for(t=0; t<MAXNUM_WORKERTHREADS; t++){
+     printf("Creating new Worker %ld\n", t);
+     rc = pthread_create(&workerThreads[t], NULL, worker_task, hpctf);
+     if (rc){
+        printf("ERROR; return code from pthread_create() is %d\n", rc);
+        exit(-1);
+     }
+  }
+
+/*
+  ####### REIMPLEMENT THIS SHT
+  pthread_t initWorkerThread;
+  if(pthread_create(&initWorkerThread, NULL, worker_task, hpctf))
+  {
+    fprintf(stderr, "Error creating thread");
+  }
+//  assert(pthread_create(&initWorkerThread, NULL, worker_task, hpctf));
+*/
+
   // start at least one worker - detached autonomous thread
-  zthread_new(worker_task, hpctf);
+  //zthread_new(worker_task, hpctf);
+
   zmq_pollitem_t poller = { hpctf->backend, 0, ZMQ_POLLIN };
   zloop_poller(hpctf->loop, &poller, s_handle_backend, hpctf);
+  //printf("");
 
   // Socket to talk to clients
 //  zloop_timer (hpctf->loop, 1000, 0, s_seq_cnt, hpctf);
@@ -368,6 +414,8 @@ void startzmqserver(hpctf_game * hpctf)
 
   zloop_destroy(&hpctf->loop);
   printf("loop finished \n");
+
+//  pthread_exit(NULL);
   return;
 }
 
@@ -383,14 +431,14 @@ int main(int argc, char const *argv[])
 
   usage(argc, argv);
   
-
   hpctf_game * hpctf = inithpctf(size);
   hpctf->verbose = verbose; 
+
   startzmqserver(hpctf);
-
+  
   freehpctf(hpctf);
-
   printf("%s\n", "Server shut down");
+
   exit(0);
 }
 

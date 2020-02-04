@@ -93,7 +93,7 @@ kvmsg_recv (void *socket)
         }
         //  Verify multipart framing
         int rcvmore = (frame_nbr < KVMSG_FRAMES - 1)? 1: 0;
-        if (zsocket_rcvmore (socket) != rcvmore) {
+        if (zsock_rcvmore (socket) != rcvmore) {
             kvmsg_destroy (&self);
             break;
         }
@@ -329,14 +329,11 @@ kvmsg_test (int verbose)
     printf (" * kvmsg: ");
 
     //  Prepare our context and sockets
-    zctx_t *ctx = zctx_new ();
-    void *output = zsocket_new (ctx, ZMQ_DEALER);
-    int rc = zmq_bind (output, "ipc://kvmsg_selftest.ipc");
-    assert (rc == 0);
-    void *input = zsocket_new (ctx, ZMQ_DEALER);
-    rc = zmq_connect (input, "ipc://kvmsg_selftest.ipc");
-    assert (rc == 0);
-
+    zsock_t *output = zsock_new_dealer ("ipc://kvmsg_selftest.ipc");
+    assert(output);
+    zsock_t *input = zsock_new_dealer ("ipc://kvmsg_selftest.ipc");
+    assert(input);
+    
     zhash_t *kvmap = zhash_new ();
 
     //  Test send and receive of simple message
@@ -356,7 +353,6 @@ kvmsg_test (int verbose)
 
     //  Shutdown and destroy all objects
     zhash_destroy (&kvmap);
-    zctx_destroy (&ctx);
 
     printf ("OK\n");
     return 0;

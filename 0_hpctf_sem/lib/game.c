@@ -21,28 +21,30 @@ hpctf_game * inithpctf(int mapsize)
   hpctf_game * p_hpctf = malloc(sizeof(hpctf_game));
   sem_init(&p_hpctf->freeplayerslots, 0, MAXPLAYER); // threadshared, 6 player slots
   p_hpctf->fs = initfield(mapsize);
-    p_hpctf->gamestate = WAITING4PLAYERS;
+  p_hpctf->gamestate = WAITING4PLAYERS;
   p_hpctf->seq = 0;
   
   for (int i = 0; i < MAXPLAYER; ++i)
     p_hpctf->plidx[i] = NULL;
 
-  p_hpctf->ctx = zctx_new ();
   p_hpctf->kvmap = zhash_new ();
   p_hpctf->workers = zlist_new ();
-
   p_hpctf->loop = zloop_new ();
+
+  assert(p_hpctf->kvmap);
+  assert(p_hpctf->workers);
+  assert(p_hpctf->loop);
+
   return p_hpctf;
 }
 
 void freehpctf(hpctf_game * p_hpctf)
 {
-  
   //int rc = zsocket_signal (p_hpctf->responder);
   //assert (rc == 0);
-  int rc = zsocket_signal (p_hpctf->fldpublisher);
-  zsocket_signal(p_hpctf->frontend);
-  assert (rc == 0);
+  int rc = zsock_signal(p_hpctf->fldpublisher, 0);
+  assert(rc == 0);
+
   /*
   rc = zsocket_wait (reader);
   assert (rc == 0);
@@ -54,11 +56,10 @@ void freehpctf(hpctf_game * p_hpctf)
       zframe_destroy (&frame);
   }
   zlist_destroy (&p_hpctf->workers);
-  zsocket_destroy (p_hpctf->ctx, p_hpctf->backend);
-  zsocket_destroy (p_hpctf->ctx, p_hpctf->frontend);
-  zsocket_destroy (p_hpctf->ctx, p_hpctf->fldpublisher);
+  zsock_destroy (&p_hpctf->backend);
+  zsock_destroy (&p_hpctf->frontend);
+  zsock_destroy (&p_hpctf->fldpublisher);
   zhash_destroy (&p_hpctf->kvmap);
-  zctx_destroy(&p_hpctf->ctx);
 
   for (int i = 0; i < MAXPLAYER; ++i)
     if (p_hpctf->plidx[i] != NULL)
@@ -79,7 +80,7 @@ int logon(hpctf_game *hpctf)
     return retres;
 
   int val;
-  int res = sem_getvalue(&hpctf->freeplayerslots, &val);
+  /*int res = */sem_getvalue(&hpctf->freeplayerslots, &val);
   int plcnt = MAXPLAYER - val;
   printf("Players left: %d hello received %d\n", val, plcnt);
 
@@ -155,7 +156,7 @@ int playerid_orig(hpctf_game *hpctf, char * player)
       if(hpctf->plidx[i] == NULL)
       {
         hpctf->plidx[i] = strdup(player);
-        if(!zctx_interrupted)
+        if(!zsys_interrupted)
         {
           kvmap_setPlayerId(hpctf->kvmap, hpctf->seq++, hpctf->fldpublisher, player, plid);
           printf("%s %d %s - plidx[%d]=%s\n", "playerIdStored", plid, player, i, hpctf->plidx[i]);
@@ -197,7 +198,7 @@ int capturetheflag(hpctf_game *hpctf, int x, int y, char * playername)// int pla
   {
     hpctf->fs->field[y][x].flag = plid; // player
 
-    if(!zctx_interrupted)
+    if(!zsys_interrupted)
     {
       kvmap_setOwner(hpctf->kvmap, hpctf->seq++, hpctf->fldpublisher, x, y, ptmp);
     }

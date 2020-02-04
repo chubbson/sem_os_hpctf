@@ -48,18 +48,16 @@ void usage(int argc, char const *argv[])
 } 
 
 
+static void 
+updsubsriber_actor(zsock_t *pipe, void *args)
 
-static void updsubscriber_task(void *args, zctx_t *ctx, void *pipe)
 {
   zhash_t * kvmap = (zhash_t *)args;
-
-  void * updsub = zsocket_new (ctx, ZMQ_SUB);
-  zsocket_set_subscribe (updsub, "");
-  zsocket_connect (updsub, "tcp://localhost:5556");
+  zsock_t *updsub = zsock_new_sub("tcp://localhost:5556", "");
 
   int64_t sequence = 0;
 
-  while (!zctx_interrupted) {
+  while (!zsys_interrupted) {
       sequence++;
       kvmsg_t *kvmsg = kvmsg_recv (updsub);
       if (!kvmsg)
@@ -84,95 +82,27 @@ static void updsubscriber_task(void *args, zctx_t *ctx, void *pipe)
       kvmsg_store (&kvmsg, kvmap);
   }
 
-  zsocket_destroy (ctx, updsub);
-  zctx_interrupted = 1; 
+  zsock_destroy (&updsub);
+  zsys_interrupted = 1; 
 
   char buf[100];
-  snprintf(buf, 100, "updsubscriber_task, Interrupted\n%" PRId64 "messages in\n", sequence);
+  snprintf(buf, 100, "updsubsriber_actor, Interrupted\n%" PRId64 "messages in\n", sequence);
   puts(buf);
 }
 
-
-/*
 int main(int argc, char const *argv[])
 {
   usage(argc, argv);
 
-  //  Prepare our context and updates socket
-  zctx_t *ctx = zctx_new ();
   zhash_t *kvmap = zhash_new ();
 
-  zthread_fork(ctx, updsubscriber_task, kvmap);
+  zactor_t *actor = zactor_new (updsubsriber_actor, kvmap);
+  assert(actor);
 
   int size = kvmap_getSize(kvmap);
   fldstruct * fs = initfield(size);
 
-  while(!zctx_interrupted)
-  {
-    printf("zctx_interrupted %d zsys_interrupted %d\n", zctx_interrupted, zsys_interrupted );
-    size = kvmap_getSize(kvmap);
-    if(fs->n != size)
-    {
-      freefield(fs); 
-      fs = initfield(size);
-    }
-
-    bool players[MAXPLAYER] = {FALSE};
-    char * prntfld =  '\0';
-    int res = (size*size*30 + size + 1) * sizeof(char);
-    prntfld = malloc(res);
-    prntfld[0] = '\0';
-    char buf[15];
-    buf[0] = '\0';
-
-    for (int y = 0; y < size; ++y)
-      for (int x = 0; x < size; ++x)
-      {
-        char * playername = kvmap_dupOwner(kvmap, x, y);
-        int plid = kvmap_getPlayerId(kvmap, playername);
-        if(verbose)
-          printf("%d:[%d][%d] - %d:\t%s\n", size, x, y, plid, playername);
-        fs->field[y][x].flag = plid;
-
-        if(plid > 0 && players[plid] == FALSE)
-        { 
-          players[plid] = TRUE;
-          sprintcolfield(plid, prntfld);
-          int n = sprintf(buf, ":%d=%s, ", plid, playername);
-          buf[n] = '\0';
-          strcat(prntfld, buf);
-        }
-      }
-    printfield(fs);
-    kvmap_printGameSettings(kvmap);
-    printf("%s\n", prntfld);
-    free(prntfld);
-
-    usleep(updms*1000);//0*((pid%5)+1));
-  }
-  freefield(fs);
-  puts("before exit");
-
-  zhash_destroy (&kvmap);
-  zctx_destroy (&ctx);
-  return 0;
-}
-*/
-
-int main(int argc, char const *argv[])
-{
-  usage(argc, argv);
-
-  //  Prepare our context and updates socket
-  zctx_t *ctx = zctx_new ();
-  zhash_t *kvmap = zhash_new ();
-
-  zthread_fork(ctx, updsubscriber_task, kvmap);
-
-  int size = kvmap_getSize(kvmap);
-  fldstruct * fs = initfield(size);
-
-  while(!zctx_interrupted)
+  while(!zsys_interrupted)
   {
     size = kvmap_getSize(kvmap);
     if(fs->n != size)
@@ -194,11 +124,14 @@ int main(int argc, char const *argv[])
   }
 
   if(verbose)
-    printf("zctx_interrupted %d zsys_interrupted %d\n", zctx_interrupted, zsys_interrupted );
+  {
+    printf("zctx_interrupted %d\n", zctx_interrupted);
+    printf("zsys_interrupted %d\n", zsys_interrupted);
+  }
     
   freefield(fs);
   zhash_destroy (&kvmap);
-  zctx_destroy (&ctx);
+  zactor_destroy (&actor);
   return 0;
 }
 

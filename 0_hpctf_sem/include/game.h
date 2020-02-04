@@ -22,13 +22,12 @@ typedef struct {
 	fldstruct * fs;
   sem_t freeplayerslots;
   int winner;
-  char winnername[251];
+  char winnername[254];
   char * plidx[MAXPLAYER];
 
-  zctx_t * ctx;               // context rapper
-  void * frontend;           // respond request
-  void * backend;            // load balancer
-  void * fldpublisher;        // fld and state publisher
+  zsock_t * frontend;           // respond request
+  zsock_t * backend;            // load balancer
+  zsock_t * fldpublisher;        // fld and state publisher
   zhash_t *kvmap;             //  Key-value store
   zloop_t *loop;              //  Reactor loop
   int64_t seq;
